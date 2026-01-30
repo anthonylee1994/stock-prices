@@ -1,4 +1,5 @@
 import axios from "axios";
+import cors from "cors";
 import express, {Request, Response} from "express";
 
 const app = express();
@@ -6,6 +7,7 @@ const PORT = process.env.PORT || 3000;
 
 const FINNHUB_API_TOKEN = "d5tjcrhr01qt62njnql0d5tjcrhr01qt62njnqlg";
 
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
