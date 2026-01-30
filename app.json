@@ -1,0 +1,10 @@
+{
+  "name": "stock-prices-api",
+  "description": "Stock Prices API built with Express.js and TypeScript",
+  "keywords": ["nodejs", "express", "typescript", "api"],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
