@@ -1,11 +1,12 @@
 import axios from "axios";
 import cors from "cors";
 import express, {Request, Response} from "express";
+import "dotenv/config";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const FINNHUB_API_TOKEN = "d5tjcrhr01qt62njnql0d5tjcrhr01qt62njnqlg";
+const FINNHUB_API_TOKEN = process.env.FINNHUB_API_TOKEN;
 
 const QUOTE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const quoteCache = new Map<string, {data: Record<string, unknown>; expiresAt: number}>();

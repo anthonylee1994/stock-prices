@@ -31,6 +31,7 @@
         "@types/node": "^25.1.0",
         "axios": "^1.13.4",
         "cors": "^2.8.6",
+        "dotenv": "^17.2.4",
         "express": "^5.2.1",
         "typescript": "^5.9.3"
     },
