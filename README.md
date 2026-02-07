@@ -55,29 +55,15 @@ pnpm start
 
 - `GET /` - API information and available endpoints
 
-### Health Check
-
-- `GET /health` - Server health status
-
 ### Stocks
 
-- `GET /api/stocks/:symbol` - Get single stock quote by symbol
 - `GET /api/quotes?symbols=AAPL,GOOGL,MSFT` - Get multiple stock quotes (comma-separated, max 50)
-- `POST /api/quotes/batch` - Get batch stock quotes (JSON body with symbols array, max 100)
 
 ### Examples
 
 ```bash
-# Single stock quote
-curl http://localhost:3000/api/stocks/AAPL
-
 # Multiple quotes via query params
 curl "http://localhost:3000/api/quotes?symbols=AAPL,GOOGL,MSFT"
-
-# Batch quotes via POST
-curl -X POST http://localhost:3000/api/quotes/batch \
-  -H "Content-Type: application/json" \
-  -d '{"symbols":["AAPL","GOOGL","MSFT","TSLA","AMZN"]}'
 ```
 
 ## Project Structure
@@ -112,21 +98,6 @@ Create a `.env` file in the root directory:
 PORT=3000
 ```
 
-## Deployment
-
-### Dokku
-
-This project is ready to deploy to Dokku. See deployment guides:
-
-- **Quick Start**: [DEPLOY-QUICK-START.md](./DEPLOY-QUICK-START.md) - Fast deployment guide
-- **Full Guide**: [DEPLOYMENT.md](./DEPLOYMENT.md) - Comprehensive deployment documentation
-
-```bash
-# Quick deploy to Dokku
-git remote add dokku dokku@your-server.com:stock-prices-api
-git push dokku main
-```
-
 ### Other Platforms
 
 The project can also be deployed to:
@@ -153,4 +124,4 @@ All use the same `Procfile` and build configuration.
 
 ## License
 
-ISC
+MIT
