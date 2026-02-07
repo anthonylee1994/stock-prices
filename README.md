@@ -57,13 +57,13 @@ pnpm start
 
 ### Stocks
 
-- `GET /api/quotes?symbols=AAPL,GOOGL,MSFT` - Get multiple stock quotes (comma-separated, max 50)
+- `GET /quotes?symbols=AAPL,GOOGL,MSFT` - Get multiple stock quotes (comma-separated, max 50)
 
 ### Examples
 
 ```bash
 # Multiple quotes via query params
-curl "http://localhost:3000/api/quotes?symbols=AAPL,GOOGL,MSFT"
+curl "http://localhost:3000/quotes?symbols=AAPL,GOOGL,MSFT"
 ```
 
 ## Project Structure
