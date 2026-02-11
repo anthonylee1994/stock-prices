@@ -38,6 +38,16 @@ app.get("/quotes", async (req: Request, res: Response) => {
             lowPrice: quote.regularMarketDayLow,
             openPrice: quote.regularMarketOpen,
             previousClosePrice: quote.regularMarketPreviousClose,
+
+            preMarketPrice: quote.preMarketPrice,
+            preMarketChange: quote.preMarketChange,
+            preMarketTime: quote.preMarketTime,
+            preMarketChangePercent: quote.preMarketChangePercent,
+
+            postMarketPrice: quote.postMarketPrice,
+            postMarketChange: quote.postMarketChange,
+            postMarketChangePercent: quote.postMarketChangePercent,
+            postMarketTime: quote.postMarketTime,
         })),
     });
 });
