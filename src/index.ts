@@ -1,23 +1,12 @@
-import axios from "axios";
 import cors from "cors";
 import express, {Request, Response} from "express";
+import YahooFinance from "yahoo-finance2";
 import "dotenv/config";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const FINNHUB_API_TOKEN = process.env.FINNHUB_API_TOKEN;
-
-const QUOTE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const quoteCache = new Map<string, {data: Record<string, unknown>; expiresAt: number}>();
-
-function getCacheKey(symbols: string): string {
-    return symbols
-        .split(",")
-        .map(s => s.trim().toUpperCase())
-        .filter(Boolean)
-        .join(",");
-}
+const yahooFinance = new YahooFinance();
 
 app.use(cors());
 app.use(express.json());
@@ -36,38 +25,21 @@ app.get("/quotes", async (req: Request, res: Response) => {
         return res.status(400).json({error: "symbols is required"});
     }
     const symbolsArray = symbols.split(",").map(s => s.trim());
-    const cacheKey = getCacheKey(symbols);
 
-    const cached = quoteCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
-        return res.json(cached.data);
-    }
+    const quotes = await yahooFinance.quote(symbolsArray);
 
-    const quotes = await Promise.all(
-        symbolsArray.map(symbol => {
-            return axios.get(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_TOKEN}`);
-        })
-    );
-
-    const responseData = {
+    res.json({
         quotes: quotes.map((quote, index) => ({
             symbol: symbolsArray[index],
-            currentPrice: quote.data.c,
-            change: quote.data.d,
-            percentChange: quote.data.dp,
-            highPrice: quote.data.h,
-            lowPrice: quote.data.l,
-            openPrice: quote.data.o,
-            previousClosePrice: quote.data.pc,
+            currentPrice: quote.regularMarketPrice,
+            change: quote.regularMarketChange,
+            percentChange: quote.regularMarketChangePercent,
+            highPrice: quote.regularMarketDayHigh,
+            lowPrice: quote.regularMarketDayLow,
+            openPrice: quote.regularMarketOpen,
+            previousClosePrice: quote.regularMarketPreviousClose,
         })),
-    };
-
-    quoteCache.set(cacheKey, {
-        data: responseData,
-        expiresAt: Date.now() + QUOTE_CACHE_TTL_MS,
     });
-
-    res.json(responseData);
 });
 
 // Start server
