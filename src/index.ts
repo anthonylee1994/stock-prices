@@ -6,7 +6,9 @@ import "dotenv/config";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const yahooFinance = new YahooFinance();
+const yahooFinance = new YahooFinance({
+    suppressNotices: ["yahooSurvey"],
+});
 
 app.use(cors());
 app.use(express.json());
