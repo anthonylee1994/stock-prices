@@ -39,6 +39,7 @@ app.get("/quotes", async (req: Request, res: Response) => {
             highPrice: quote.regularMarketDayHigh,
             lowPrice: quote.regularMarketDayLow,
             openPrice: quote.regularMarketOpen,
+            regularMarketTime: quote.regularMarketTime,
             previousClosePrice: quote.regularMarketPreviousClose,
             preMarketPrice: quote.preMarketPrice,
             preMarketChange: quote.preMarketChange,
