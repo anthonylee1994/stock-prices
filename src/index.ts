@@ -46,6 +46,9 @@ app.get("/quotes", async (req: Request, res: Response) => {
             postMarketChange: quote.postMarketChange,
             postMarketChangePercent: quote.postMarketChangePercent,
             postMarketTime: quote.postMarketTime,
+            forwardPE: quote.forwardPE,
+            priceToBook: quote.priceToBook,
+            dividendYield: quote.dividendYield,
         })),
     });
 });
