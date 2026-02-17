@@ -16,10 +16,13 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
 app.get("/", (_: Request, res: Response) => {
-    res.json({
-        message: "Stock Prices API",
-        version: "1.0.0",
-    });
+    res.type("application/toon");
+    res.send(
+        encode({
+            message: "Stock Prices API",
+            version: "1.0.0",
+        })
+    );
 });
 
 app.get("/quotes", async (req: Request, res: Response) => {
@@ -31,6 +34,7 @@ app.get("/quotes", async (req: Request, res: Response) => {
 
     const quotes = await yahooFinance.quote(symbolsArray);
 
+    res.type("application/toon");
     res.send(
         encode({
             quotes: quotes.map((quote, index) => ({
