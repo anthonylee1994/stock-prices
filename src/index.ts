@@ -30,13 +30,14 @@ app.get("/quotes", async (req: Request, res: Response) => {
         return res.status(400).json({error: "symbols is required"});
     }
     const symbolsArray = symbols.split(",").map(s => s.trim());
-
-    const quotes = await yahooFinance.quote(symbolsArray);
+    const quotes = await yahooFinance.quote(symbolsArray, {lang: "zh-HK", region: "HK"});
 
     res.send(
         encode({
             quotes: quotes.map((quote, index) => ({
                 symbol: symbolsArray[index],
+                name: quote.longName,
+                market: quote.market,
                 currentPrice: quote.regularMarketPrice,
                 change: quote.regularMarketChange,
                 percentChange: quote.regularMarketChangePercent,
