@@ -16,7 +16,6 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
 app.get("/", (_: Request, res: Response) => {
-    res.type("application/toon");
     res.send(
         encode({
             message: "Stock Prices API",
@@ -34,7 +33,6 @@ app.get("/quotes", async (req: Request, res: Response) => {
 
     const quotes = await yahooFinance.quote(symbolsArray);
 
-    res.type("application/toon");
     res.send(
         encode({
             quotes: quotes.map((quote, index) => ({
