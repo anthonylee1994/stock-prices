@@ -1,6 +1,6 @@
 ---
 name: stock-prices
-description: Query real-time stock prices and market data using the Stock Prices API. Use when fetching stock quotes, analyzing market data, or working with symbols like AAPL, NVDA, GOOGL, or any ticker symbols.
+description: Query real-time stock prices and market data using the Stock Prices API. Responses are in TOON format—decode with @toon-format/toon. Use when fetching stock quotes, analyzing market data, or working with symbols like AAPL, NVDA, GOOGL, or any ticker symbols.
 ---
 
 # Stock Prices API Skill
@@ -15,37 +15,43 @@ This skill helps you work with the Stock Prices API to fetch real-time market da
 
 ## Quick Start
 
-Fetch stock quotes for one or more symbols:
+Fetch stock quotes for one or more symbols (responses are in TOON format):
 
 ```bash
 curl "https://stock-prices.on99.app/quotes?symbols=NVDA"
 curl "https://stock-prices.on99.app/quotes?symbols=AAPL,GOOGL,MSFT"
 ```
 
+Install the TOON decoder for parsing: `pnpm add @toon-format/toon`
+
 ## Response Format
 
-The API returns JSON with the following structure:
+The API returns **TOON** (Token-Oriented Object Notation) format—a compact, human-readable encoding that uses ~40% fewer tokens than JSON. This makes it ideal for LLM prompts and streaming.
 
-```json
-{
-    "quotes": [
-        {
-            "symbol": "NVDA",
-            "currentPrice": 188.54,
-            "change": -1.5,
-            "percentChange": -0.789308,
-            "highPrice": 192.48,
-            "lowPrice": 188.12,
-            "openPrice": 191.405,
-            "previousClosePrice": 190.04,
-            "preMarketPrice": 191.8799,
-            "preMarketChange": 3.3399048,
-            "preMarketTime": "2026-02-11T13:49:16.000Z",
-            "preMarketChangePercent": 1.771457
-        }
-    ]
-}
+### TOON Response Example
+
 ```
+quotes[1]{symbol,currentPrice,change,percentChange,highPrice,lowPrice,openPrice,previousClosePrice,preMarketPrice,preMarketChange,preMarketTime,preMarketChangePercent,...}:
+  NVDA,188.54,-1.5,-0.789308,192.48,188.12,191.405,190.04,191.8799,3.3399048,2026-02-11T13:49:16.000Z,1.771457,...
+```
+
+### Decoding TOON Responses
+
+Use `@toon-format/toon` to parse responses back to JavaScript/JSON:
+
+```typescript
+import { decode } from "@toon-format/toon";
+
+const response = await fetch("https://stock-prices.on99.app/quotes?symbols=NVDA");
+const toonText = await response.text();
+const data = decode(toonText);
+
+// data.quotes is an array of quote objects
+const quote = data.quotes[0];
+console.log(`${quote.symbol}: $${quote.currentPrice}`);
+```
+
+The decoded structure matches JSON—same objects, arrays, and primitives.
 
 ## Available Data Fields
 
@@ -76,11 +82,13 @@ curl "https://stock-prices.on99.app/quotes?symbols=AAPL,GOOGL,MSFT,TSLA,AMZN"
 
 ### Error Handling
 
-Always check for valid responses:
+Always check for valid responses. Decode TOON before accessing data:
 
 ```typescript
+import { decode } from "@toon-format/toon";
+
 const response = await fetch("https://stock-prices.on99.app/quotes?symbols=NVDA");
-const data = await response.json();
+const data = decode(await response.text());
 
 if (data.quotes && data.quotes.length > 0) {
     const quote = data.quotes[0];
@@ -109,9 +117,11 @@ const vsOpen = quote.currentPrice - quote.openPrice;
 ### 1. Price Monitoring
 
 ```typescript
+import { decode } from "@toon-format/toon";
+
 async function checkPrice(symbol: string) {
     const res = await fetch(`https://stock-prices.on99.app/quotes?symbols=${symbol}`);
-    const data = await res.json();
+    const data = decode(await res.text());
     const quote = data.quotes[0];
 
     return {
@@ -125,10 +135,12 @@ async function checkPrice(symbol: string) {
 ### 2. Portfolio Tracking
 
 ```typescript
+import { decode } from "@toon-format/toon";
+
 async function getPortfolio(symbols: string[]) {
     const symbolString = symbols.join(",");
     const res = await fetch(`https://stock-prices.on99.app/quotes?symbols=${symbolString}`);
-    const data = await res.json();
+    const data = decode(await res.text());
 
     return data.quotes.map(q => ({
         symbol: q.symbol,
@@ -141,9 +153,11 @@ async function getPortfolio(symbols: string[]) {
 ### 3. Market Summary
 
 ```typescript
+import { decode } from "@toon-format/toon";
+
 async function marketSummary(symbols: string[]) {
     const res = await fetch(`https://stock-prices.on99.app/quotes?symbols=${symbols.join(",")}`);
-    const data = await res.json();
+    const data = decode(await res.text());
 
     const gainers = data.quotes.filter(q => q.change > 0);
     const losers = data.quotes.filter(q => q.change < 0);
@@ -184,6 +198,7 @@ async function marketSummary(symbols: string[]) {
 
 ## Notes
 
+- **Response format**: API returns TOON, not JSON. Use `decode()` from `@toon-format/toon` to parse.
 - All prices are in USD
 - Data updates in real-time during market hours
 - Pre-market and after-hours data is available

@@ -1,6 +1,7 @@
 import cors from "cors";
 import express, {Request, Response} from "express";
 import YahooFinance from "yahoo-finance2";
+import {encode} from "@toon-format/toon";
 import "dotenv/config";
 
 const app = express();
@@ -30,30 +31,32 @@ app.get("/quotes", async (req: Request, res: Response) => {
 
     const quotes = await yahooFinance.quote(symbolsArray);
 
-    res.json({
-        quotes: quotes.map((quote, index) => ({
-            symbol: symbolsArray[index],
-            currentPrice: quote.regularMarketPrice,
-            change: quote.regularMarketChange,
-            percentChange: quote.regularMarketChangePercent,
-            highPrice: quote.regularMarketDayHigh,
-            lowPrice: quote.regularMarketDayLow,
-            openPrice: quote.regularMarketOpen,
-            regularMarketTime: quote.regularMarketTime,
-            previousClosePrice: quote.regularMarketPreviousClose,
-            preMarketPrice: quote.preMarketPrice,
-            preMarketChange: quote.preMarketChange,
-            preMarketTime: quote.preMarketTime,
-            preMarketChangePercent: quote.preMarketChangePercent,
-            postMarketPrice: quote.postMarketPrice,
-            postMarketChange: quote.postMarketChange,
-            postMarketChangePercent: quote.postMarketChangePercent,
-            postMarketTime: quote.postMarketTime,
-            forwardPE: quote.forwardPE,
-            priceToBook: quote.priceToBook,
-            dividendYield: quote.dividendYield,
-        })),
-    });
+    res.send(
+        encode({
+            quotes: quotes.map((quote, index) => ({
+                symbol: symbolsArray[index],
+                currentPrice: quote.regularMarketPrice,
+                change: quote.regularMarketChange,
+                percentChange: quote.regularMarketChangePercent,
+                highPrice: quote.regularMarketDayHigh,
+                lowPrice: quote.regularMarketDayLow,
+                openPrice: quote.regularMarketOpen,
+                regularMarketTime: quote.regularMarketTime,
+                previousClosePrice: quote.regularMarketPreviousClose,
+                preMarketPrice: quote.preMarketPrice,
+                preMarketChange: quote.preMarketChange,
+                preMarketTime: quote.preMarketTime,
+                preMarketChangePercent: quote.preMarketChangePercent,
+                postMarketPrice: quote.postMarketPrice,
+                postMarketChange: quote.postMarketChange,
+                postMarketChangePercent: quote.postMarketChangePercent,
+                postMarketTime: quote.postMarketTime,
+                forwardPE: quote.forwardPE,
+                priceToBook: quote.priceToBook,
+                dividendYield: quote.dividendYield,
+            })),
+        })
+    );
 });
 
 // Start server
