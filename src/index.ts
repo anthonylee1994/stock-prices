@@ -1,15 +1,11 @@
 import cors from "cors";
 import express, {Request, Response} from "express";
-import YahooFinance from "yahoo-finance2";
 import {encode} from "@toon-format/toon";
 import "dotenv/config";
+import {getQuotes} from "./service";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-const yahooFinance = new YahooFinance({
-    suppressNotices: ["yahooSurvey"],
-});
 
 app.use(cors());
 app.use(express.json());
@@ -25,41 +21,22 @@ app.get("/", (_: Request, res: Response) => {
 });
 
 app.get("/quotes", async (req: Request, res: Response) => {
-    const symbols = req.query.symbols as string | undefined;
-    if (!symbols) {
-        return res.status(400).json({error: "symbols is required"});
-    }
-    const symbolsArray = symbols.split(",").map(s => s.trim());
-    const quotes = await yahooFinance.quote(symbolsArray, {lang: "zh-HK", region: "HK"});
+    try {
+        const symbols = req.query.symbols as string | undefined;
+        if (!symbols) {
+            return res.status(400).json({error: "symbols is required"});
+        }
+        const symbolsArray = symbols.split(",").map(s => s.trim());
+        const quotes = await getQuotes(symbolsArray);
 
-    res.send(
-        encode({
-            quotes: quotes.map((quote, index) => ({
-                symbol: symbolsArray[index],
-                name: quote.longName,
-                market: quote.market,
-                currentPrice: quote.regularMarketPrice,
-                change: quote.regularMarketChange,
-                percentChange: quote.regularMarketChangePercent,
-                highPrice: quote.regularMarketDayHigh,
-                lowPrice: quote.regularMarketDayLow,
-                openPrice: quote.regularMarketOpen,
-                regularMarketTime: quote.regularMarketTime,
-                previousClosePrice: quote.regularMarketPreviousClose,
-                preMarketPrice: quote.preMarketPrice,
-                preMarketChange: quote.preMarketChange,
-                preMarketTime: quote.preMarketTime,
-                preMarketChangePercent: quote.preMarketChangePercent,
-                postMarketPrice: quote.postMarketPrice,
-                postMarketChange: quote.postMarketChange,
-                postMarketChangePercent: quote.postMarketChangePercent,
-                postMarketTime: quote.postMarketTime,
-                forwardPE: quote.forwardPE,
-                priceToBook: quote.priceToBook,
-                dividendYield: quote.dividendYield,
-            })),
-        })
-    );
+        res.send(
+            encode({
+                quotes,
+            })
+        );
+    } catch (error) {
+        res.status(500).json({error: "Failed to fetch quotes"});
+    }
 });
 
 // Start server
