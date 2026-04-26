@@ -1,43 +1,47 @@
 ---
 name: stock-prices
-description: Query real-time stock prices and market data using the Stock Prices API. Responses are in TOON format—decode with @toon-format/toon. Use when fetching stock quotes, analyzing market data, or working with symbols like AAPL, NVDA, GOOGL, or any ticker symbols.
+description: 用 Stock Prices API 查即時股票價格同市場數據。Response 係 TOON 格式，請用 @toon-format/toon decode。適合用喺查股票報價、分析市場數據，或者處理 AAPL、NVDA、GOOGL 等 ticker symbol。
 ---
 
 # Stock Prices API Skill
 
-This skill helps you work with the Stock Prices API to fetch real-time market data and stock quotes.
+呢個 skill 幫你用 Stock Prices API 拎即時市場數據同股票報價。
 
 ## API Endpoint
 
-**Base URL**: `https://stock-prices.on99.app`
+**Base URL**：`https://stock-prices.on99.app`
 
-**Primary Endpoint**: `/quotes?symbols={SYMBOLS}`
+**主要 Endpoint**：`/quotes?symbols={SYMBOLS}`
 
-## Quick Start
+## 快速開始
 
-Fetch stock quotes for one or more symbols (responses are in TOON format):
+查一隻或多隻股票報價。Response 會係 TOON 格式：
 
 ```bash
 curl "https://stock-prices.on99.app/quotes?symbols=NVDA"
 curl "https://stock-prices.on99.app/quotes?symbols=AAPL,GOOGL,MSFT"
 ```
 
-Install the TOON decoder for parsing: `pnpm add @toon-format/toon`
+如果要 parse TOON，先裝 decoder：
 
-## Response Format
-
-The API returns **TOON** (Token-Oriented Object Notation) format—a compact, human-readable encoding that uses ~40% fewer tokens than JSON. This makes it ideal for LLM prompts and streaming.
-
-### TOON Response Example
-
+```bash
+pnpm add @toon-format/toon
 ```
+
+## Response 格式
+
+API 會回傳 **TOON**（Token-Oriented Object Notation）格式。TOON 係一種 compact、易讀嘅 encoding，通常比 JSON 慳大約 40% tokens，適合放入 LLM prompt 或 streaming 場景。
+
+### TOON Response 例子
+
+```text
 quotes[1]{symbol,currentPrice,change,percentChange,highPrice,lowPrice,openPrice,previousClosePrice,preMarketPrice,preMarketChange,preMarketTime,preMarketChangePercent,...}:
   NVDA,188.54,-1.5,-0.789308,192.48,188.12,191.405,190.04,191.8799,3.3399048,2026-02-11T13:49:16.000Z,1.771457,...
 ```
 
-### Decoding TOON Responses
+### Decode TOON Response
 
-Use `@toon-format/toon` to parse responses back to JavaScript/JSON:
+用 `@toon-format/toon` 將 response parse 返做 JavaScript / JSON data：
 
 ```typescript
 import { decode } from "@toon-format/toon";
@@ -46,35 +50,35 @@ const response = await fetch("https://stock-prices.on99.app/quotes?symbols=NVDA"
 const toonText = await response.text();
 const data = decode(toonText);
 
-// data.quotes is an array of quote objects
+// data.quotes 係 quote object array
 const quote = data.quotes[0];
 console.log(`${quote.symbol}: $${quote.currentPrice}`);
 ```
 
-The decoded structure matches JSON—same objects, arrays, and primitives.
+Decode 完嘅 structure 同 JSON 一樣，都係 objects、arrays 同 primitives。
 
-## Available Data Fields
+## 可用 Data Fields
 
-| Field                    | Type              | Description                           |
-| ------------------------ | ----------------- | ------------------------------------- |
-| `symbol`                 | string            | Stock ticker symbol                   |
-| `currentPrice`           | number            | Current trading price                 |
-| `change`                 | number            | Price change from previous close      |
-| `percentChange`          | number            | Percentage change from previous close |
-| `highPrice`              | number            | Day's high price                      |
-| `lowPrice`               | number            | Day's low price                       |
-| `openPrice`              | number            | Opening price                         |
-| `previousClosePrice`     | number            | Previous day's closing price          |
-| `preMarketPrice`         | number            | Pre-market trading price              |
-| `preMarketChange`        | number            | Pre-market price change               |
-| `preMarketTime`          | string (ISO 8601) | Pre-market data timestamp             |
-| `preMarketChangePercent` | number            | Pre-market percentage change          |
+| Field                    | Type              | 說明                     |
+| ------------------------ | ----------------- | ------------------------ |
+| `symbol`                 | string            | 股票 ticker symbol       |
+| `currentPrice`           | number            | 現價                     |
+| `change`                 | number            | 相對上一個收市價嘅升跌   |
+| `percentChange`          | number            | 相對上一個收市價嘅升跌 % |
+| `highPrice`              | number            | 即日最高價               |
+| `lowPrice`               | number            | 即日最低價               |
+| `openPrice`              | number            | 開市價                   |
+| `previousClosePrice`     | number            | 上一個交易日收市價       |
+| `preMarketPrice`         | number            | 盤前價格                 |
+| `preMarketChange`        | number            | 盤前升跌                 |
+| `preMarketTime`          | string (ISO 8601) | 盤前數據 timestamp       |
+| `preMarketChangePercent` | number            | 盤前升跌 %               |
 
-## Usage Guidelines
+## 使用指引
 
-### Multiple Symbols
+### 多個 Symbols
 
-Query multiple stocks by separating symbols with commas (max 50):
+用 comma 分隔 symbols，一次查多隻股票，最多 50 隻：
 
 ```bash
 curl "https://stock-prices.on99.app/quotes?symbols=AAPL,GOOGL,MSFT,TSLA,AMZN"
@@ -82,7 +86,7 @@ curl "https://stock-prices.on99.app/quotes?symbols=AAPL,GOOGL,MSFT,TSLA,AMZN"
 
 ### Error Handling
 
-Always check for valid responses. Decode TOON before accessing data:
+攞 data 前應該先確認 response 合法，並且先 decode TOON：
 
 ```typescript
 import { decode } from "@toon-format/toon";
@@ -96,25 +100,25 @@ if (data.quotes && data.quotes.length > 0) {
 }
 ```
 
-### Price Analysis
+### 價格分析
 
-Calculate common metrics:
+計常用指標：
 
 ```typescript
-// Determine if stock is up or down
+// 判斷股票升定跌
 const isUp = quote.change > 0;
-const direction = isUp ? "📈" : "📉";
+const direction = isUp ? "up" : "down";
 
-// Calculate day's range percentage
+// 計即日高低波幅 %
 const rangePct = ((quote.highPrice - quote.lowPrice) / quote.lowPrice) * 100;
 
-// Compare current to open
+// 比較現價同開市價
 const vsOpen = quote.currentPrice - quote.openPrice;
 ```
 
-## Common Use Cases
+## 常見用途
 
-### 1. Price Monitoring
+### 1. 監察股價
 
 ```typescript
 import { decode } from "@toon-format/toon";
@@ -150,7 +154,7 @@ async function getPortfolio(symbols: string[]) {
 }
 ```
 
-### 3. Market Summary
+### 3. 市場摘要
 
 ```typescript
 import { decode } from "@toon-format/toon";
@@ -171,7 +175,7 @@ async function marketSummary(symbols: string[]) {
 }
 ```
 
-## Popular Stock Symbols
+## 常用股票 Symbols
 
 ### Tech Giants (FAANG+)
 
@@ -182,7 +186,7 @@ async function marketSummary(symbols: string[]) {
 - `NFLX` - Netflix
 - `MSFT` - Microsoft
 
-### High-Profile Stocks
+### 高關注度股票
 
 - `NVDA` - NVIDIA
 - `TSLA` - Tesla
@@ -190,17 +194,17 @@ async function marketSummary(symbols: string[]) {
 - `INTC` - Intel
 - `ORCL` - Oracle
 
-### Indices
+### 指數
 
 - `^GSPC` - S&P 500
 - `^DJI` - Dow Jones
 - `^IXIC` - NASDAQ
 
-## Notes
+## 注意事項
 
-- **Response format**: API returns TOON, not JSON. Use `decode()` from `@toon-format/toon` to parse.
-- All prices are in USD
-- Data updates in real-time during market hours
-- Pre-market and after-hours data is available
-- Timestamps are in ISO 8601 format (UTC)
-- Maximum 50 symbols per request
+- **Response 格式**：API 回傳 TOON，唔係 JSON。請用 `@toon-format/toon` 嘅 `decode()` parse。
+- 所有價格都係 USD
+- 美股交易時段內數據會即時更新
+- 支援盤前同盤後數據
+- Timestamp 係 ISO 8601 格式，時區係 UTC
+- 每次 request 最多 50 個 symbols

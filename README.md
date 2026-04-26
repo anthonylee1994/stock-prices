@@ -1,41 +1,38 @@
 # Stock Prices API
 
-A starter Express.js API built with TypeScript and managed with pnpm.
+用 NestJS + TypeScript 寫嘅股票報價 API，資料來源係 `yahoo-finance2`，response 會用 Toon 格式輸出。
 
-## Features
+## 功能
 
-- ✅ Express.js 5.x
-- ✅ TypeScript
-- ✅ Hot reload with Nodemon
-- ✅ Type-safe development
-- ✅ Sample stock price endpoints
-- ✅ Error handling middleware
-- ✅ Request logging
+- NestJS application structure
+- TypeScript
+- Yahoo Finance 股票報價
+- CORS enabled
+- Toon response format
+- 支援 Heroku / Railway / Render / Fly.io 呢類 Node.js hosting
 
-## Prerequisites
+## 環境要求
 
-- Node.js (v18 or higher)
-- pnpm
+- Node.js 18 或以上
+- pnpm 8 或以上
 
-## Installation
+## 安裝
 
 ```bash
 pnpm install
 ```
 
-## Development
+## 開發
 
-Start the development server with hot reload:
+開 watch mode：
 
 ```bash
-pnpm dev
+pnpm start:dev
 ```
 
-The server will start on `http://localhost:3000`
+預設會喺 `http://localhost:3000` 起 server。
 
 ## Build
-
-Compile TypeScript to JavaScript:
 
 ```bash
 pnpm build
@@ -43,85 +40,94 @@ pnpm build
 
 ## Production
 
-Run the compiled JavaScript:
-
 ```bash
-pnpm start
+pnpm start:prod
 ```
 
-## API Endpoints
+## API
 
-### Root
+### `GET /`
 
-- `GET /` - API information and available endpoints
+回傳 API 基本資料。
 
-### Stocks
-
-- `GET /quotes?symbols=AAPL,GOOGL,MSFT` - Get multiple stock quotes (comma-separated, max 50)
-
-### Examples
+例子：
 
 ```bash
-# Multiple quotes via query params
+curl "http://localhost:3000/"
+```
+
+### `GET /quotes`
+
+用 comma-separated symbols 拎多隻股票報價。
+
+例子：
+
+```bash
 curl "http://localhost:3000/quotes?symbols=AAPL,GOOGL,MSFT"
+```
+
+如果冇傳 `symbols`，會回傳 `400`：
+
+```json
+{"error":"symbols is required"}
+```
+
+## 環境變數
+
+可以喺 project root 建立 `.env`：
+
+```env
+PORT=3000
 ```
 
 ## Project Structure
 
-```
+```text
 stock-prices/
 ├── src/
-│   └── index.ts         # Main application file
-├── dist/                # Compiled JavaScript (generated)
-├── node_modules/        # Dependencies
-├── package.json         # Project configuration
-├── tsconfig.json        # TypeScript configuration
-├── nodemon.json         # Nodemon configuration
-└── README.md           # This file
+│   ├── app.controller.ts # HTTP endpoints
+│   ├── app.module.ts     # Nest module
+│   ├── app.service.ts    # 股票報價 service
+│   ├── main.ts           # Nest bootstrap
+│   └── types.ts          # 共用 types
+├── dist/                 # build output
+├── nest-cli.json         # Nest CLI config
+├── package.json          # scripts 同 dependencies
+├── tsconfig.json         # TypeScript config
+├── Procfile              # deployment entry
+└── README.md
 ```
 
 ## Scripts
 
-- `pnpm dev` - Start development server with hot reload
-- `pnpm build` - Build the project
-- `pnpm start` - Run production build
-- `pnpm clean` - Remove build directory
-- `pnpm rebuild` - Clean and rebuild project
-- `pnpm format` - Format code with Prettier
-- `pnpm format:check` - Check code formatting
+- `pnpm start`：用 Nest CLI 起 app
+- `pnpm start:dev`：watch mode 開發
+- `pnpm start:debug`：debug + watch mode
+- `pnpm start:prod`：跑 build 後嘅 `dist/main`
+- `pnpm build`：build NestJS project
+- `pnpm format`：用 Prettier format TypeScript files
+- `pnpm lint`：用 ESLint fix TypeScript files
+- `pnpm test`：跑 Jest tests
+- `pnpm test:watch`：Jest watch mode
+- `pnpm test:cov`：Jest coverage
+- `pnpm test:e2e`：跑 e2e tests
 
-## Environment Variables
+## 部署
 
-Create a `.env` file in the root directory:
+呢個 project 有 `Procfile`，可以部署去 Heroku 類似嘅 Node.js platform。部署前要確保：
 
+```bash
+pnpm build
 ```
-PORT=3000
+
+production command：
+
+```bash
+pnpm start:prod
 ```
 
-### Other Platforms
-
-The project can also be deployed to:
-
-- Heroku
-- Railway
-- Render
-- Fly.io
-- DigitalOcean App Platform
-
-All use the same `Procfile` and build configuration.
-
-## Next Steps
-
-1. Add database integration (PostgreSQL, MongoDB, etc.)
-2. Implement authentication & authorization
-3. Add data validation with Zod or Joi
-4. Set up testing with Jest or Vitest
-5. Add API documentation with Swagger/OpenAPI
-6. Implement real stock price data integration (Alpha Vantage, Finnhub, etc.)
-7. Add rate limiting and security middleware (helmet, express-rate-limit)
-8. Set up CI/CD pipeline
-9. Add monitoring and error tracking
+Nest CLI build output 入口係 `dist/main`。如果部署平台直接讀 `Procfile`，記得同 `start:prod` 保持一致。
 
 ## License
 
-MIT
+ISC
