@@ -1,7 +1,7 @@
-import {BadRequestException, Controller, Get, Query, Res} from "@nestjs/common";
-import {encode} from "@toon-format/toon";
 import type {Response} from "express";
+import {encode} from "@toon-format/toon";
 import {StockPricesService} from "./stock-prices/stock-prices.service";
+import {BadRequestException, Controller, Get, Query, Res} from "@nestjs/common";
 
 @Controller()
 export class AppController {

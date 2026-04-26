@@ -1,16 +1,15 @@
 import {Injectable} from "@nestjs/common";
-import YahooFinance from "yahoo-finance2";
 import {Quote} from "./stock-prices.type";
-
-const yahooFinance = new YahooFinance({
-    suppressNotices: ["yahooSurvey"],
-});
-
+import YahooFinance from "yahoo-finance2";
 @Injectable()
 export class StockPricesService {
+    private readonly yahooFinance = new YahooFinance({
+        suppressNotices: ["yahooSurvey"],
+    });
+
     async getQuotes(symbols: string[]): Promise<Quote[]> {
         try {
-            const quotes = await yahooFinance.quote(symbols, {lang: "zh-HK", region: "HK"});
+            const quotes = await this.yahooFinance.quote(symbols, {lang: "zh-HK", region: "HK"});
 
             return quotes.map((quote): Quote => {
                 return {
