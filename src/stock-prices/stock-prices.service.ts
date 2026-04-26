@@ -1,6 +1,7 @@
 import {Injectable} from "@nestjs/common";
 import {Quote} from "./stock-prices.type";
 import YahooFinance from "yahoo-finance2";
+
 @Injectable()
 export class StockPricesService {
     private readonly yahooFinance = new YahooFinance({
