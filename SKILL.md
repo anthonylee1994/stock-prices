@@ -44,7 +44,7 @@ quotes[1]{symbol,currentPrice,change,percentChange,highPrice,lowPrice,openPrice,
 用 `@toon-format/toon` 將 response parse 返做 JavaScript / JSON data：
 
 ```typescript
-import { decode } from "@toon-format/toon";
+import {decode} from "@toon-format/toon";
 
 const response = await fetch("https://stock-prices.on99.app/quotes?symbols=NVDA");
 const toonText = await response.text();
@@ -89,7 +89,7 @@ curl "https://stock-prices.on99.app/quotes?symbols=AAPL,GOOGL,MSFT,TSLA,AMZN"
 攞 data 前應該先確認 response 合法，並且先 decode TOON：
 
 ```typescript
-import { decode } from "@toon-format/toon";
+import {decode} from "@toon-format/toon";
 
 const response = await fetch("https://stock-prices.on99.app/quotes?symbols=NVDA");
 const data = decode(await response.text());
@@ -121,7 +121,7 @@ const vsOpen = quote.currentPrice - quote.openPrice;
 ### 1. 監察股價
 
 ```typescript
-import { decode } from "@toon-format/toon";
+import {decode} from "@toon-format/toon";
 
 async function checkPrice(symbol: string) {
     const res = await fetch(`https://stock-prices.on99.app/quotes?symbols=${symbol}`);
@@ -139,7 +139,7 @@ async function checkPrice(symbol: string) {
 ### 2. Portfolio Tracking
 
 ```typescript
-import { decode } from "@toon-format/toon";
+import {decode} from "@toon-format/toon";
 
 async function getPortfolio(symbols: string[]) {
     const symbolString = symbols.join(",");
@@ -157,7 +157,7 @@ async function getPortfolio(symbols: string[]) {
 ### 3. 市場摘要
 
 ```typescript
-import { decode } from "@toon-format/toon";
+import {decode} from "@toon-format/toon";
 
 async function marketSummary(symbols: string[]) {
     const res = await fetch(`https://stock-prices.on99.app/quotes?symbols=${symbols.join(",")}`);
