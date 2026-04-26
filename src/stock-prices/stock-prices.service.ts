@@ -1,6 +1,6 @@
 import {Injectable} from "@nestjs/common";
 import YahooFinance from "yahoo-finance2";
-import {Quote} from "../types";
+import {Quote} from "./stock-prices.type";
 
 const yahooFinance = new YahooFinance({
     suppressNotices: ["yahooSurvey"],
