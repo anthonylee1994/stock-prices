@@ -1,33 +1,32 @@
 # Stock Prices API
 
-用 NestJS + TypeScript 寫嘅股票報價 API，資料來源係 `yahoo-finance2`，response 會用 Toon 格式輸出。
+用 Rust 寫嘅股票報價 API，資料來源係 Yahoo Finance quote endpoint，response 會用 TOON 格式輸出。
 
 ## 功能
 
-- NestJS application structure
-- TypeScript
+- Rust + axum
 - Yahoo Finance 股票報價
 - CORS enabled
 - Toon response format
-- 支援 Heroku / Railway / Render / Fly.io 呢類 Node.js hosting
+- 支援 Heroku / Railway / Render / Fly.io 呢類 hosting
 
 ## 環境要求
 
-- Node.js 18 或以上
-- pnpm 8 或以上
+- Rust 1.94 或以上
+- Cargo
 
 ## 安裝
 
 ```bash
-pnpm install
+cargo fetch
 ```
 
 ## 開發
 
-開 watch mode：
+起 server：
 
 ```bash
-pnpm start:dev
+cargo run
 ```
 
 預設會喺 `http://localhost:3000` 起 server。
@@ -35,13 +34,13 @@ pnpm start:dev
 ## Build
 
 ```bash
-pnpm build
+cargo build --release
 ```
 
 ## Production
 
 ```bash
-pnpm start:prod
+./target/release/stock-prices
 ```
 
 ## API
@@ -85,48 +84,35 @@ PORT=3000
 ```text
 stock-prices/
 ├── src/
-│   ├── app.controller.ts # HTTP endpoints
-│   ├── app.module.ts     # Nest module
-│   ├── app.service.ts    # 股票報價 service
-│   ├── main.ts           # Nest bootstrap
-│   └── types.ts          # 共用 types
-├── dist/                 # build output
-├── nest-cli.json         # Nest CLI config
-├── package.json          # scripts 同 dependencies
-├── tsconfig.json         # TypeScript config
+│   └── main.rs           # HTTP endpoints、Yahoo Finance client、TOON encoder
+├── target/               # build output
+├── Cargo.toml            # Rust dependencies
+├── Cargo.lock            # locked Rust dependencies
 ├── Procfile              # deployment entry
 └── README.md
 ```
 
-## Scripts
+## Commands
 
-- `pnpm start`：用 Nest CLI 起 app
-- `pnpm start:dev`：watch mode 開發
-- `pnpm start:debug`：debug + watch mode
-- `pnpm start:prod`：跑 build 後嘅 `dist/main`
-- `pnpm build`：build NestJS project
-- `pnpm format`：用 Prettier format TypeScript files
-- `pnpm lint`：用 ESLint fix TypeScript files
-- `pnpm test`：跑 Jest tests
-- `pnpm test:watch`：Jest watch mode
-- `pnpm test:cov`：Jest coverage
-- `pnpm test:e2e`：跑 e2e tests
+- `cargo run`：起 development server
+- `cargo build --release`：build production binary
+- `cargo test`：跑 tests
+- `cargo fmt`：format Rust code
+- `cargo check`：type check
 
 ## 部署
 
-呢個 project 有 `Procfile`，可以部署去 Heroku 類似嘅 Node.js platform。部署前要確保：
+呢個 project 有 `Procfile`，可以部署去支援 Rust buildpack 嘅 platform。部署前要確保：
 
 ```bash
-pnpm build
+cargo build --release
 ```
 
 production command：
 
 ```bash
-pnpm start:prod
+./target/release/stock-prices
 ```
-
-Nest CLI build output 入口係 `dist/main`。如果部署平台直接讀 `Procfile`，記得同 `start:prod` 保持一致。
 
 ## License
 

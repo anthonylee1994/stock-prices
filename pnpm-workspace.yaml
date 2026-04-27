@@ -1,3 +1,0 @@
-onlyBuiltDependencies:
-  - '@nestjs/core'
-  - esbuild

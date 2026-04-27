@@ -1,1 +1,1 @@
-web: node dist/main.js
+web: ./target/release/stock-prices
