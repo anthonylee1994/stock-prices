@@ -12,7 +12,7 @@
 
 ## 環境要求
 
-- Rust 1.94 或以上
+- Rust 1.95 或以上
 - Cargo
 
 ## 安裝
@@ -68,7 +68,7 @@ curl "http://localhost:3000/quotes?symbols=AAPL,GOOGL,MSFT"
 如果冇傳 `symbols`，會回傳 `400`：
 
 ```json
-{"error":"symbols is required"}
+{"error": "symbols is required"}
 ```
 
 ## 環境變數
