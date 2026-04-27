@@ -116,4 +116,4 @@ production command：
 
 ## License
 
-ISC
+MIT
