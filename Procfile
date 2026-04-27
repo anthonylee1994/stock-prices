@@ -1,1 +1,1 @@
-web: ./target/release/stock-prices
+web: ./stock-prices
