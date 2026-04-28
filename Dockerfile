@@ -4,7 +4,9 @@ FROM golang:1.26-alpine AS build
 
 WORKDIR /app
 
-COPY go.mod ./
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY src ./src
 
 RUN CGO_ENABLED=0 go build -o stock-prices ./src
