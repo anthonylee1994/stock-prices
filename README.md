@@ -1,32 +1,25 @@
 # Stock Prices API
 
-用 Rust 寫嘅股票報價 API，資料來源係 Yahoo Finance quote endpoint，response 會用 TOON 格式輸出。
+用 Go 寫嘅股票報價 API，資料來源係 Yahoo Finance quote endpoint，response 會用 TOON 格式輸出。
 
 ## 功能
 
-- Rust + axum
+- Go + Gin
 - Yahoo Finance 股票報價
 - CORS enabled
-- Toon response format
+- TOON response format via `github.com/toon-format/toon-go`
 - 支援 Heroku / Railway / Render / Fly.io 呢類 hosting
 
 ## 環境要求
 
-- Rust 1.95 或以上
-- Cargo
-
-## 安裝
-
-```bash
-cargo fetch
-```
+- Go 1.25 或以上
 
 ## 開發
 
 起 server：
 
 ```bash
-cargo run
+go run ./src
 ```
 
 預設會喺 `http://localhost:3000` 起 server。
@@ -34,13 +27,13 @@ cargo run
 ## Build
 
 ```bash
-cargo build --release
+go build -o stock-prices ./src
 ```
 
 ## Production
 
 ```bash
-./target/release/stock-prices
+./stock-prices
 ```
 
 ## API
@@ -84,34 +77,36 @@ PORT=3000
 ```text
 stock-prices/
 ├── src/
-│   └── main.rs           # HTTP endpoints、Yahoo Finance client、TOON encoder
-├── target/               # build output
-├── Cargo.toml            # Rust dependencies
-├── Cargo.lock            # locked Rust dependencies
+│   ├── main.go           # server startup、graceful shutdown
+│   ├── app/              # Gin routing、middleware
+│   ├── controllers/      # Gin HTTP controllers
+│   ├── models/           # response / domain structs
+│   ├── services/         # Yahoo Finance client
+│   └── views/            # TOON / JSON renderers
+├── go.mod                # Go module
 ├── Procfile              # deployment entry
 └── README.md
 ```
 
 ## Commands
 
-- `cargo run`：起 development server
-- `cargo build --release`：build production binary
-- `cargo test`：跑 tests
-- `cargo fmt`：format Rust code
-- `cargo check`：type check
+- `go run ./src`：起 development server
+- `go build -o stock-prices ./src`：build production binary
+- `go test ./...`：跑 tests
+- `gofmt -w .`：format Go code
 
 ## 部署
 
-呢個 project 有 `Procfile`，可以部署去支援 Rust buildpack 嘅 platform。部署前要確保：
+呢個 project 有 `Procfile`，可以部署去支援 Go buildpack 嘅 platform。部署前要確保：
 
 ```bash
-cargo build --release
+go build -o stock-prices ./src
 ```
 
 production command：
 
 ```bash
-./target/release/stock-prices
+./stock-prices
 ```
 
 ## License

@@ -1,15 +1,13 @@
 # syntax=docker/dockerfile:1
 
-FROM rust:1.95-alpine AS build
+FROM golang:1.26-alpine AS build
 
 WORKDIR /app
 
-RUN apk add --no-cache build-base pkgconfig
-
-COPY Cargo.toml Cargo.lock* ./
+COPY go.mod ./
 COPY src ./src
 
-RUN cargo build --release
+RUN CGO_ENABLED=0 go build -o stock-prices ./src
 
 FROM alpine:3.23 AS runner
 
@@ -19,7 +17,7 @@ WORKDIR /app
 
 RUN apk add --no-cache ca-certificates
 
-COPY --from=build /app/target/release/stock-prices ./stock-prices
+COPY --from=build /app/stock-prices ./stock-prices
 
 EXPOSE 3000
 
