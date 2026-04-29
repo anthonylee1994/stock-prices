@@ -6,16 +6,16 @@
 
 ## Build, Test, and Development Commands
 
-- `pnpm install`: 按 `pnpm-lock.yaml` 安裝 dependencies。
-- `pnpm start:dev`: 用 watch mode 跑 NestJS server，預設係 `http://localhost:3000`。
-- `PORT=3100 pnpm start:dev`: 用自訂 port 本地開發。
-- `pnpm build`: 用 Nest CLI compile 到 `dist/`。
-- `pnpm start:prod`: 用 Node 跑 compiled app。
-- `pnpm test`: 跑 Jest unit tests。
-- `pnpm test:e2e`: 用 `test/jest-e2e.json` 跑 API e2e tests。
-- `pnpm test:cov`: 跑 Jest coverage。
-- `pnpm exec tsc --noEmit -p tsconfig.json`: 只做 type check，唔輸出檔案。
-- `pnpm format`: 用 Prettier format `src/**/*.ts` 同 `test/**/*.ts`。
+- `bun install`: 按 `bun.lock` 安裝 dependencies。
+- `bun run start:dev`: 用 Bun watch mode 跑 NestJS server，預設係 `http://localhost:3000`。
+- `PORT=3100 bun run start:dev`: 用自訂 port 本地開發。
+- `bun run build`: 用 `bun build --compile` compile executable 到 `dist/main`。
+- `bun run start:prod`: 跑 compiled executable `./dist/main`。
+- `bun run test`: 跑 Jest unit tests。
+- `bun run test:e2e`: 用 `test/jest-e2e.json` 跑 API e2e tests。
+- `bun run test:cov`: 跑 Jest coverage。
+- `bun run tsc --noEmit -p tsconfig.json`: 只做 type check，唔輸出檔案。
+- `bun run format`: 用 Prettier format `src/**/*.ts` 同 `test/**/*.ts`。
 
 ## Coding Style & Naming Conventions
 
