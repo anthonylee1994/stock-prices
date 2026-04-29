@@ -126,7 +126,7 @@ pnpm start:prod
 `Procfile`：
 
 ```text
-web: pnpm start
+web: node dist/main.js
 ```
 
 Docker：

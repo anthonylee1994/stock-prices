@@ -1,1 +1,1 @@
-web: pnpm start
+web: node dist/main.js
