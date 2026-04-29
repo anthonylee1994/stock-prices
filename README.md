@@ -1,25 +1,32 @@
 # Stock Prices API
 
-用 Go 寫嘅股票報價 API，資料來源係 Yahoo Finance quote endpoint，response 會用 TOON 格式輸出。
+用 NestJS 寫嘅股票報價 API，資料來源係 Yahoo Finance quote endpoint，response 會用 TOON 格式輸出。
 
 ## 功能
 
-- Go + Gin
+- NestJS + TypeScript
 - Yahoo Finance 股票報價
 - CORS enabled
-- TOON response format via `github.com/toon-format/toon-go`
+- TOON response format
 - 支援 Heroku / Railway / Render / Fly.io 呢類 hosting
 
 ## 環境要求
 
-- Go 1.25 或以上
+- Node.js 24 或以上
+- pnpm 10 或以上
 
 ## 開發
+
+安裝 dependencies：
+
+```bash
+pnpm install
+```
 
 起 server：
 
 ```bash
-go run ./src
+pnpm start:dev
 ```
 
 預設會喺 `http://localhost:3000` 起 server。
@@ -27,13 +34,13 @@ go run ./src
 ## Build
 
 ```bash
-go build -o stock-prices ./src
+pnpm build
 ```
 
 ## Production
 
 ```bash
-./stock-prices
+pnpm start
 ```
 
 ## API
@@ -77,36 +84,38 @@ PORT=3000
 ```text
 stock-prices/
 ├── src/
-│   ├── main.go           # server startup、graceful shutdown
-│   ├── app/              # Gin routing、middleware
-│   ├── controllers/      # Gin HTTP controllers
-│   ├── models/           # response / domain structs
-│   ├── services/         # Yahoo Finance client
-│   └── views/            # TOON / JSON renderers
-├── go.mod                # Go module
+│   ├── main.ts           # server startup
+│   ├── app.module.ts     # NestJS module
+│   ├── stock-prices/     # Yahoo Finance client + domain types
+│   └── web/              # HTTP controllers / exception filter
+├── test/                 # e2e tests
+├── package.json          # Node package
 ├── Procfile              # deployment entry
 └── README.md
 ```
 
 ## Commands
 
-- `go run ./src`：起 development server
-- `go build -o stock-prices ./src`：build production binary
-- `go test ./...`：跑 tests
-- `gofmt -w .`：format Go code
+- `pnpm start:dev`：起 development server
+- `pnpm build`：build production JS
+- `pnpm start`：起 production server
+- `pnpm test`：跑 tests
+- `pnpm typecheck`：TypeScript type check
+- `pnpm format`：Prettier format
 
 ## 部署
 
-呢個 project 有 `Procfile`，可以部署去支援 Go buildpack 嘅 platform。部署前要確保：
+呢個 project 有 `Procfile`，可以部署去支援 Node.js buildpack 嘅 platform。部署前要確保：
 
 ```bash
-go build -o stock-prices ./src
+pnpm install
+pnpm build
 ```
 
 production command：
 
 ```bash
-./stock-prices
+pnpm start
 ```
 
 ## License

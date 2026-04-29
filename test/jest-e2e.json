@@ -1,0 +1,23 @@
+{
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": ".",
+    "testEnvironment": "node",
+    "testRegex": "\\.e2e-spec\\.ts$",
+    "transform": {
+        "^.+\\.(t|j)s$": [
+            "ts-jest",
+            {
+                "tsconfig": {
+                    "emitDecoratorMetadata": false,
+                    "experimentalDecorators": true,
+                    "module": "nodenext",
+                    "moduleResolution": "nodenext",
+                    "target": "ES2023"
+                }
+            }
+        ]
+    },
+    "moduleNameMapper": {
+        "^@toon-format/toon$": "<rootDir>/toon.ts"
+    }
+}

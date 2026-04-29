@@ -1,1 +1,1 @@
-web: ./stock-prices
+web: pnpm start

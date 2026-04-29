@@ -1,26 +1,30 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.26-alpine AS build
-
+FROM node:24-alpine AS deps
 WORKDIR /app
+RUN corepack enable
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
-COPY go.mod go.sum ./
-RUN go mod download
+FROM node:24-alpine AS build
+WORKDIR /app
+RUN corepack enable
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN pnpm build
+RUN pnpm prune --prod
 
-COPY src ./src
-
-RUN CGO_ENABLED=0 go build -o stock-prices ./src
-
-FROM alpine:3.23 AS runner
+FROM node:24-alpine AS runner
 
 ENV PORT="3000"
+ENV NODE_ENV="production"
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
-
-COPY --from=build /app/stock-prices ./stock-prices
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY package.json ./
 
 EXPOSE 3000
 
-CMD ["./stock-prices"]
+CMD ["node", "dist/main.js"]
