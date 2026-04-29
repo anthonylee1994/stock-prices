@@ -13,7 +13,7 @@
         "experimentalDecorators": true,
         "allowSyntheticDefaultImports": true,
         "target": "ES2023",
-        "types": ["node", "jest"],
+        "types": ["bun", "jest"],
         "sourceMap": true,
         "outDir": "./dist",
         "forceConsistentCasingInFileNames": true,
