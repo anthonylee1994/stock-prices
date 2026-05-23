@@ -1,6 +1,6 @@
 import {All, Controller, Get, MethodNotAllowedException, Res} from "@nestjs/common";
 import type {Response} from "express";
-import {encodeToon} from "./toon";
+import {encode} from "@toon-format/toon";
 const version = "1.0.0";
 
 @Controller()
@@ -10,7 +10,7 @@ export class RootController {
         response
             .status(200)
             .type("text/plain; charset=utf-8")
-            .send(await encodeToon({message: "Stock Prices API", version}));
+            .send(encode({message: "Stock Prices API", version}));
     }
 
     @All()
