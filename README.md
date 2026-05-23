@@ -11,25 +11,26 @@
 - Yahoo Finance quote data，預設 `lang=zh-HK`、`region=HK`
 - TOON text response：`text/plain; charset=utf-8`
 - CORS enabled：允許 `GET`、`OPTIONS`
-- Dockerfile 同 Procfile，可部署去支援 Bun compiled binary 嘅 hosting
+- Dockerfile 同 Procfile，可部署去支援 Node.js 嘅 hosting
 - Jest unit tests 同 e2e tests，方便改 API 行為時驗證
 
 ## 環境要求
 
-- Bun 1.3 或以上
+- Node.js 24 或以上
+- pnpm 11.1.3 或以上
 
-建議用 `bun`，因為 repo 已經有 `bun.lock`。如果用其他 package manager，dependency resolution 可能會同 CI 或本地預期唔一致。
+建議用 `pnpm`，因為 repo 已經有 `pnpm-lock.yaml`。如果用其他 package manager，dependency resolution 可能會同 CI 或本地預期唔一致。
 
 ## 安裝
 
 ```bash
-bun install
+pnpm install
 ```
 
 ## 快速開始
 
 ```bash
-bun run start:dev
+pnpm run start:dev
 ```
 
 預設 server 會喺 `http://localhost:3000`。開咗之後可以先試 root endpoint：
@@ -47,7 +48,7 @@ curl "http://localhost:3000/quotes?symbols=AAPL,MSFT,0700.HK"
 如果要改 port：
 
 ```bash
-PORT=3100 bun run start:dev
+PORT=3100 pnpm run start:dev
 ```
 
 ## API Design
@@ -123,23 +124,23 @@ Error response 一樣會用 TOON/text 格式輸出。Client 應該用 HTTP statu
 ## Commands
 
 ```bash
-bun run build
-bun run start:dev
-bun run start:prod
-bun run test
-bun run test:cov
-bun run test:e2e
-bun run tsc --noEmit -p tsconfig.json
-bun run format
+pnpm run build
+pnpm run start:dev
+pnpm run start:prod
+pnpm run test
+pnpm run test:cov
+pnpm run test:e2e
+pnpm exec tsc --noEmit -p tsconfig.json
+pnpm run format
 ```
 
 常用 workflow：
 
 ```bash
-bun run tsc --noEmit -p tsconfig.json
-bun run format
-bun run test
-bun run test:e2e
+pnpm exec tsc --noEmit -p tsconfig.json
+pnpm run format
+pnpm run test
+pnpm run test:e2e
 ```
 
 改 TypeScript code 後，最少要跑 type check 同 Prettier；改 API behavior 時，亦要跑 unit/e2e tests。
@@ -155,19 +156,19 @@ Coverage 設定喺 `jest.config.cjs`，主要針對 `src/stock-prices/*.ts`，�
 Build：
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 Run compiled app：
 
 ```bash
-bun run start:prod
+pnpm run start:prod
 ```
 
 `Procfile`：
 
 ```text
-web: ./main
+web: pnpm run start:prod
 ```
 
 Docker：
@@ -179,8 +180,8 @@ docker run --rm -p 3000:3000 stock-prices
 
 部署時記得：
 
-- Hosting platform 要支援 Linux executable binary
-- Production command 係 `./main`
+- Hosting platform 要支援 Node.js 24
+- Production command 係 `pnpm run start:prod`
 - App 會讀 `PORT` environment variable；如果冇設定，就用預設 port
 - Yahoo Finance 係 external dependency，network failure 或 upstream error 會變成 `502 Bad Gateway`
 
@@ -205,7 +206,8 @@ stock-prices/
 │   └── toon.ts
 ├── Dockerfile
 ├── Procfile
-├── bun.lock
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
 ├── jest.config.cjs
 ├── package.json
 └── tsconfig.json

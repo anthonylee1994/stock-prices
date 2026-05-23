@@ -1,1 +1,1 @@
-web: ./main
+web: pnpm run start:prod

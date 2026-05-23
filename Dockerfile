@@ -1,23 +1,30 @@
 # syntax=docker/dockerfile:1
 
-FROM oven/bun:1.3.13-alpine AS build
+FROM node:24.11.1-alpine AS build
 WORKDIR /app
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
-COPY . .
-RUN bun run build
 
-FROM alpine:3.22 AS runner
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY . .
+RUN pnpm run build
+RUN pnpm prune --prod
+
+FROM node:24.11.1-alpine AS runner
 
 ENV PORT="3000"
 ENV NODE_ENV="production"
 
 WORKDIR /app
 
-RUN apk add --no-cache libgcc libstdc++
-
-COPY --from=build /app/dist/main ./main
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
 
 EXPOSE 3000
 
-CMD ["./main"]
+CMD ["node", "dist/main.js"]
