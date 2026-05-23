@@ -3,11 +3,10 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-        "build": "bun build ./src/main.ts --compile --outfile ./dist/main --external @nestjs/microservices --external @nestjs/websockets --external @nestjs/websockets/socket-module --external class-transformer --external class-validator",
         "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
         "start:dev": "bun --watch ./src/main.ts",
         "start:debug": "bun --inspect --watch ./src/main.ts",
-        "start:prod": "./dist/main",
+        "start:prod": "bun ./src/main.ts",
         "test": "jest",
         "test:watch": "jest --watch",
         "test:cov": "jest --coverage",
