@@ -168,7 +168,7 @@ pnpm run start:prod
 `Procfile`：
 
 ```text
-web: pnpm run start:prod
+web: node dist/main.js
 ```
 
 Docker：
@@ -181,7 +181,7 @@ docker run --rm -p 3000:3000 stock-prices
 部署時記得：
 
 - Hosting platform 要支援 Node.js 24
-- Production command 係 `pnpm run start:prod`
+- Production command 係 `node dist/main.js`
 - App 會讀 `PORT` environment variable；如果冇設定，就用預設 port
 - Yahoo Finance 係 external dependency，network failure 或 upstream error 會變成 `502 Bad Gateway`
 
