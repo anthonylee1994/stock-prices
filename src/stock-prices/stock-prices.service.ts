@@ -11,8 +11,8 @@ export class StockPricesService {
     public async getQuotes(symbols: string[]): Promise<Quote[]> {
         try {
             const quotes = await this.yahooFinance.quote(symbols, {lang: "zh-HK", region: "HK"});
-            return quotes.map((quote, index) => ({
-                symbol: symbols[index],
+            return quotes.map(quote => ({
+                symbol: quote.symbol,
                 name: quote.longName,
                 market: quote.market,
                 currentPrice: quote.regularMarketPrice,
