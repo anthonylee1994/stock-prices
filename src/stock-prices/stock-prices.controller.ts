@@ -1,5 +1,5 @@
 import type {Response} from "express";
-import {encode} from "@toon-format/toon";
+import {encodeToon} from "../toon";
 import {StockPricesService} from "./stock-prices.service";
 import {All, BadRequestException, Controller, Get, Inject, MethodNotAllowedException, Query, Res} from "@nestjs/common";
 
@@ -20,7 +20,7 @@ export class StockPricesController {
 
         const quotes = await this.stockPricesService.getQuotes(symbols);
 
-        response.status(200).type("text/plain; charset=utf-8").send(encode({quotes}));
+        response.status(200).type("text/plain; charset=utf-8").send(await encodeToon({quotes}));
     }
 
     @All()

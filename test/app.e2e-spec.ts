@@ -1,11 +1,14 @@
 import request from "supertest";
 import {Test} from "@nestjs/testing";
 import type {App} from "supertest/types";
-import {encode} from "@toon-format/toon";
 import {AppModule} from "../src/app.module";
 import type {INestApplication} from "@nestjs/common";
 import type {Quote} from "../src/stock-prices/stock-prices.type";
 import {StockPricesService} from "../src/stock-prices/stock-prices.service";
+
+jest.mock("../src/toon", () => ({
+    encodeToon: jest.fn((value: unknown) => Promise.resolve(JSON.stringify(value))),
+}));
 
 describe("App (e2e)", function () {
     const quotes: Quote[] = [
@@ -49,11 +52,11 @@ describe("App (e2e)", function () {
             .get("/")
             .expect(200)
             .expect("content-type", "text/plain; charset=utf-8")
-            .expect(encode({message: "Stock Prices API", version: "1.0.0"}));
+            .expect(JSON.stringify({message: "Stock Prices API", version: "1.0.0"}));
     });
 
     it("returns encoded quotes", async function () {
-        await request(app.getHttpServer()).get("/quotes").query({symbols: " AAPL, MSFT ,, 0700.HK "}).expect(200).expect("content-type", "text/plain; charset=utf-8").expect(encode({quotes}));
+        await request(app.getHttpServer()).get("/quotes").query({symbols: " AAPL, MSFT ,, 0700.HK "}).expect(200).expect("content-type", "text/plain; charset=utf-8").expect(JSON.stringify({quotes}));
 
         expect(stockPricesService.getQuotes).toHaveBeenCalledWith(["AAPL", "MSFT", "0700.HK"]);
     });

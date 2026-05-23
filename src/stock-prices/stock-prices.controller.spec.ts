@@ -1,9 +1,13 @@
 import {BadRequestException, MethodNotAllowedException} from "@nestjs/common";
 import {Test} from "@nestjs/testing";
-import {encode} from "@toon-format/toon";
+import {encodeToon} from "../toon";
 import {StockPricesController} from "./stock-prices.controller";
 import {StockPricesService} from "./stock-prices.service";
 import {Quote} from "./stock-prices.type";
+
+jest.mock("../toon", () => ({
+    encodeToon: jest.fn((value: unknown) => Promise.resolve(JSON.stringify(value))),
+}));
 
 describe("StockPricesController", () => {
     const quotes: Quote[] = [
@@ -57,7 +61,8 @@ describe("StockPricesController", () => {
         expect(stockPricesService.getQuotes).toHaveBeenCalledWith(["AAPL", "MSFT", "0700.HK"]);
         expect(response.status).toHaveBeenCalledWith(200);
         expect(response.type).toHaveBeenCalledWith("text/plain; charset=utf-8");
-        expect(response.send).toHaveBeenCalledWith(encode({quotes}));
+        expect(response.send).toHaveBeenCalledWith(JSON.stringify({quotes}));
+        expect(encodeToon).toHaveBeenCalledWith({quotes});
     });
 
     it("rejects missing symbols", async () => {
