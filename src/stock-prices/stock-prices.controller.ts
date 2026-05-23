@@ -35,7 +35,13 @@ export class StockPricesController {
 
         const symbols = input
             .split(",")
-            .map(symbol => symbol.trim())
+            .map(symbol => {
+                if (symbol.includes(".") && !symbol.includes(".HK")) {
+                    return symbol.replace(".", "-").trim();
+                }
+
+                return symbol.trim();
+            })
             .filter(symbol => symbol !== "");
 
         return symbols.length > 0 ? symbols : undefined;
