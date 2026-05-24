@@ -23,7 +23,6 @@
         "@nestjs/common": "11.1.19",
         "@nestjs/core": "11.1.19",
         "@nestjs/platform-express": "11.1.19",
-        "@toon-format/toon": "2.1.0",
         "reflect-metadata": "0.2.2",
         "rxjs": "7.8.2",
         "yahoo-finance2": "3.14.0"

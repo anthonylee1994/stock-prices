@@ -16,8 +16,5 @@
                 }
             }
         ]
-    },
-    "moduleNameMapper": {
-        "^@toon-format/toon$": "<rootDir>/toon.ts"
     }
 }

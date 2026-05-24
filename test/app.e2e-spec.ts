@@ -1,7 +1,6 @@
 import request from "supertest";
 import {Test} from "@nestjs/testing";
 import type {App} from "supertest/types";
-import {encode} from "@toon-format/toon";
 import {AppModule} from "../src/app.module";
 import type {INestApplication} from "@nestjs/common";
 import type {Quote} from "../src/stock-prices/stock-prices.type";
@@ -48,12 +47,12 @@ describe("App (e2e)", function () {
         return request(app.getHttpServer())
             .get("/")
             .expect(200)
-            .expect("content-type", "text/plain; charset=utf-8")
-            .expect(encode({message: "Stock Prices API", version: "1.0.0"}));
+            .expect("content-type", /json/)
+            .expect({message: "Stock Prices API", version: "1.0.0"});
     });
 
-    it("returns encoded quotes", async function () {
-        await request(app.getHttpServer()).get("/quotes").query({symbols: " AAPL, MSFT ,, 0700.HK "}).expect(200).expect("content-type", "text/plain; charset=utf-8").expect(encode({quotes}));
+    it("returns quotes", async function () {
+        await request(app.getHttpServer()).get("/quotes").query({symbols: " AAPL, MSFT ,, 0700.HK "}).expect(200).expect("content-type", /json/).expect({quotes});
 
         expect(stockPricesService.getQuotes).toHaveBeenCalledWith(["AAPL", "MSFT", "0700.HK"]);
     });
