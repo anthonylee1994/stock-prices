@@ -107,6 +107,26 @@ async fn rejects_blank_symbols() {
 }
 
 #[tokio::test]
+async fn rejects_duplicate_query_fields_as_json() {
+    let (app, provider) = create_test_app();
+    let (status, content_type, body) = send(app, "GET", "/quotes?symbols=AAPL&symbols=MSFT").await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(content_type.as_deref(), Some("application/json"));
+    assert_eq!(body, json!({"message": "Invalid query parameters", "error": "Bad Request", "statusCode": 400}));
+    assert!(provider.calls.lock().expect("calls lock").is_empty());
+}
+
+#[tokio::test]
+async fn preserves_market_suffixes_and_normalizes_legacy_aliases() {
+    let (app, provider) = create_test_app();
+    let (status, _, _) = send(app, "GET", "/quotes?symbols=BRK.B,BF.A,7203.T,VOD.L,0700.HK,0700.hk").await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(*provider.calls.lock().expect("calls lock"), vec![vec!["BRK-B", "BF-A", "7203.T", "VOD.L", "0700.HK", "0700.hk"]],);
+}
+
+#[tokio::test]
 async fn rejects_unsupported_quote_methods() {
     let (app, _) = create_test_app();
 

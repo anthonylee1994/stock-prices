@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::Duration;
 
 use reqwest::header::{ACCEPT, ORIGIN, REFERER};
@@ -62,42 +63,74 @@ pub struct YahooQuote {
 /// "crumb" token, so the first call seeds both and later calls reuse them until
 /// Yahoo rejects them.
 pub struct YahooClient {
+    session: RwLock<Arc<YahooSession>>,
+    endpoints: Endpoints,
+}
+
+struct YahooSession {
     http: Client,
-    crumb: RwLock<Option<String>>,
+    crumb: Option<String>,
+}
+
+impl YahooSession {
+    fn new() -> Result<Self, YahooError> {
+        // Keep cookie jars separate so refreshing cannot change an in-flight
+        // request's cookie/crumb pair. Yahoo's edge requires HTTP/1.1.
+        let http = Client::builder().user_agent(USER_AGENT).cookie_store(true).http1_only().timeout(REQUEST_TIMEOUT).build()?;
+        Ok(Self { http, crumb: None })
+    }
+}
+
+struct Endpoints {
+    quote: String,
+    cookie: String,
+    crumb: String,
 }
 
 impl YahooClient {
     pub fn new() -> Result<Self, YahooError> {
-        // Yahoo's edge aborts our HTTP/2 streams with a protocol error, so pin
-        // the connection to HTTP/1.1.
-        let http = Client::builder().user_agent(USER_AGENT).cookie_store(true).http1_only().timeout(REQUEST_TIMEOUT).build()?;
-
-        Ok(Self { http, crumb: RwLock::new(None) })
+        Ok(Self {
+            session: RwLock::new(Arc::new(YahooSession::new()?)),
+            endpoints: Endpoints {
+                quote: QUOTE_URL.to_owned(),
+                cookie: COOKIE_URL.to_owned(),
+                crumb: CRUMB_URL.to_owned(),
+            },
+        })
     }
 
     /// Fetches quotes for `symbols`, retrying once with a fresh crumb when
     /// Yahoo rejects the cached one.
     pub async fn quote(&self, symbols: &[String], lang: &str, region: &str) -> Result<Vec<YahooQuote>, YahooError> {
         let joined = symbols.join(",");
+        let session = self.session(None).await?;
 
-        match self.quote_once(&joined, lang, region, false).await {
-            Err(error) if is_stale_credentials(&error) => self.quote_once(&joined, lang, region, true).await,
+        match self.quote_once(&joined, lang, region, &session).await {
+            Err(error) if is_stale_credentials(&error) => {
+                let refreshed = self.session(Some(&session)).await?;
+                self.quote_once(&joined, lang, region, &refreshed).await
+            }
             result => result,
         }
     }
 
-    async fn quote_once(&self, symbols: &str, lang: &str, region: &str, refresh_crumb: bool) -> Result<Vec<YahooQuote>, YahooError> {
-        let crumb = self.crumb(refresh_crumb).await?;
-        let response = self
+    async fn quote_once(&self, symbols: &str, lang: &str, region: &str, session: &YahooSession) -> Result<Vec<YahooQuote>, YahooError> {
+        let crumb = session.crumb.as_deref().ok_or_else(|| YahooError::Crumb("session was not initialized".to_owned()))?;
+        let response = session
             .http
-            .get(QUOTE_URL)
-            .query(&[("symbols", symbols), ("lang", lang), ("region", region), ("crumb", &crumb)])
+            .get(&self.endpoints.quote)
+            .query(&[("symbols", symbols), ("lang", lang), ("region", region), ("crumb", crumb)])
             .header(ACCEPT, "application/json")
             .send()
             .await?;
 
         let status = response.status();
         let body = response.text().await?;
+        // Authentication status must survive even when JSON has an unrelated
+        // description such as "Forbidden".
+        if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
+            return Err(YahooError::Status { status, body });
+        }
         let payload: Value = serde_json::from_str(&body).map_err(|error| {
             if status.is_success() {
                 YahooError::Unexpected(format!("response was not valid JSON: {error}"))
@@ -125,31 +158,43 @@ impl YahooClient {
         Ok(results.into_iter().filter(|quote| quote.quote_type.as_deref() != Some("NONE")).collect())
     }
 
-    async fn crumb(&self, refresh: bool) -> Result<String, YahooError> {
-        if !refresh {
-            // Read the cached crumb into an owned value so the read guard is
-            // released before we ever ask for the write guard.
-            let cached = self.crumb.read().await.clone();
-            if let Some(crumb) = cached {
-                return Ok(crumb);
+    async fn session(&self, rejected: Option<&Arc<YahooSession>>) -> Result<Arc<YahooSession>, YahooError> {
+        {
+            let cached = self.session.read().await;
+            if session_is_usable(&cached, rejected) {
+                return Ok(cached.clone());
             }
         }
 
-        let mut cached = self.crumb.write().await;
-        if !refresh && let Some(crumb) = cached.clone() {
-            return Ok(crumb);
+        let mut cached = self.session.write().await;
+        // Another request may have replaced the rejected session while this
+        // request waited. Reuse that replacement instead of refreshing again.
+        if session_is_usable(&cached, rejected) {
+            return Ok(cached.clone());
         }
+        let session = Arc::new(self.create_session().await?);
+        *cached = session.clone();
+        Ok(session)
+    }
+
+    async fn create_session(&self) -> Result<YahooSession, YahooError> {
+        let mut session = YahooSession::new()?;
 
         // This request exists purely for its `set-cookie` headers, which the
         // client's cookie store keeps for the crumb and quote calls.
-        self.http.get(COOKIE_URL).header(ACCEPT, "text/html,application/xhtml+xml,application/xml").send().await?;
-
-        let response = self
+        session
             .http
-            .get(CRUMB_URL)
+            .get(&self.endpoints.cookie)
+            .header(ACCEPT, "text/html,application/xhtml+xml,application/xml")
+            .send()
+            .await?;
+
+        let response = session
+            .http
+            .get(&self.endpoints.crumb)
             .header(ACCEPT, "*/*")
             .header(ORIGIN, "https://finance.yahoo.com")
-            .header(REFERER, COOKIE_URL)
+            .header(REFERER, &self.endpoints.cookie)
             .send()
             .await?;
 
@@ -164,10 +209,13 @@ impl YahooClient {
             return Err(YahooError::Crumb("crumb endpoint returned no token".to_owned()));
         }
 
-        *cached = Some(crumb.clone());
-
-        Ok(crumb)
+        session.crumb = Some(crumb);
+        Ok(session)
     }
+}
+
+fn session_is_usable(cached: &Arc<YahooSession>, rejected: Option<&Arc<YahooSession>>) -> bool {
+    cached.crumb.is_some() && rejected.is_none_or(|rejected| !Arc::ptr_eq(cached, rejected))
 }
 
 #[derive(Debug, Deserialize)]
@@ -220,6 +268,9 @@ fn api_error(payload: &Value) -> Option<String> {
 
     None
 }
+
+#[cfg(test)]
+mod http_tests;
 
 #[cfg(test)]
 mod tests {

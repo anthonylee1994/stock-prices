@@ -53,7 +53,7 @@ PORT=3100 cargo run
 
 所有正常 response 都係 JSON，content type 係 `application/json`。缺失嘅欄位會直接由 response 中省略，而唔會出現 `null`。
 
-股票 symbol 會用 comma-separated 格式傳入，例如 `AAPL,MSFT,0700.HK`。Server 會自動 trim 空白同忽略空項目，所以 client 唔需要自己做太多 cleanup。非港股 symbol 嘅第一個 `.` 會轉成 `-`（例如 `BRK.B` → `BRK-B`），因為 Yahoo 就係用呢個格式表示 share class；`.HK` suffix 會原樣保留。
+股票 symbol 會用 comma-separated 格式傳入，例如 `AAPL,MSFT,0700.HK`。Server 會自動 trim 空白同忽略空項目，所以 client 唔需要自己做太多 cleanup。已知 share-class alias `BRK.A`、`BRK.B`、`BF.A`、`BF.B` 會轉成 Yahoo 用嘅 `BRK-A`、`BRK-B`、`BF-A`、`BF-B`；其他 symbol 原樣保留，包括 `0700.HK`、`7203.T`、`VOD.L` 等市場 suffix。其他 share class 請直接用 Yahoo symbol。
 
 ## API
 
@@ -114,6 +114,7 @@ Response 內容：
 ### Errors
 
 - Missing 或 blank `symbols`：`400 Bad Request`
+- Query 解析失敗（例如重複 `symbols` parameter）：`400 Bad Request`，JSON message 係 `Invalid query parameters`
 - 非支援 method：`405 Method Not Allowed`
 - Yahoo Finance request 失敗：`502 Bad Gateway`
 
@@ -165,6 +166,7 @@ Run compiled app：
 - App 會讀 `PORT` environment variable；如果冇設定，就用 `3000`
 - Server bind `0.0.0.0`，所以 container 或 PaaS 都用得
 - Yahoo Finance 係 external dependency，network failure 或 upstream error 會變成 `502 Bad Gateway`
+- `SIGINT` 同 Unix `SIGTERM` 會觸發 graceful shutdown，等處理中嘅 request 完成
 
 ### Dokku
 
@@ -232,6 +234,6 @@ stock-prices/
 
 `src/stock_prices/controller.rs` 負責 HTTP request/response handling；`service.rs` 負責整理 quote data；`yahoo.rs` 負責同 Yahoo Finance 溝通。新增欄位時，通常要同步改 `yahoo.rs` 嘅 `YahooQuote`、`types.rs` 嘅 `Quote`、`service.rs` 嘅 `map_quote`、相關 tests 同 README response list。
 
-Yahoo 嘅 `v7/finance/quote` 要 session cookie 加一個配對嘅 crumb token，`yahoo.rs` 會 lazy 咁拎一次然後 cache，等 Yahoo 拒收（`401`/`403` 或者 description 提到 crumb）時先自動換新嘅再 retry 一次。另外 Yahoo edge 會用 protocol error 中斷我哋嘅 HTTP/2 stream，所以 client 特意 pin 咗 HTTP/1.1，唔好隨手拆。
+Yahoo 嘅 `v7/finance/quote` 要 session cookie 加一個配對嘅 crumb token，`yahoo.rs` 會 lazy 咁拎一次然後 cache，等 Yahoo 拒收（`401`/`403` 或者 description 提到 crumb）時先自動換新嘅再 retry 一次。同批過期 request 會共用一次成功嘅 refresh；每個 session 有獨立 cookie jar，刷新唔會改到處理中 request 嘅 cookie/crumb 配對。另外 Yahoo edge 會用 protocol error 中斷我哋嘅 HTTP/2 stream，所以 client 特意 pin 咗 HTTP/1.1，唔好隨手拆。
 
 如果要改 response format，要留意現有 consumer 可能依賴而家嘅 JSON shape。除非係有意破壞 contract，否則唔好改 content type 或 top-level response shape。

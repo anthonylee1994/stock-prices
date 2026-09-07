@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use axum::extract::rejection::QueryRejection;
 use axum::extract::{Query, State};
 use axum::routing::get;
 use axum::{Json, Router};
@@ -23,7 +24,8 @@ struct QuotesResponse {
     quotes: Vec<Quote>,
 }
 
-async fn index(State(stock_prices_service): State<Arc<dyn QuoteProvider>>, Query(query): Query<QuotesQuery>) -> Result<Json<QuotesResponse>, ApiError> {
+async fn index(State(stock_prices_service): State<Arc<dyn QuoteProvider>>, query: Result<Query<QuotesQuery>, QueryRejection>) -> Result<Json<QuotesResponse>, ApiError> {
+    let Query(query) = query.map_err(|_| ApiError::bad_request("Invalid query parameters"))?;
     let symbols = parse_symbols(query.symbols.as_deref()).ok_or_else(|| ApiError::bad_request("symbols is required"))?;
     let quotes = stock_prices_service.get_quotes(&symbols).await?;
 
@@ -32,9 +34,8 @@ async fn index(State(stock_prices_service): State<Arc<dyn QuoteProvider>>, Query
 
 /// Splits the comma-separated `symbols` query parameter.
 ///
-/// Non-Hong Kong symbols use `-` where Yahoo's class separator would be a `.`
-/// (`BRK.B` becomes `BRK-B`), while `.HK` tickers keep their suffix. Blank
-/// entries are dropped, and an empty result is treated as no input at all.
+/// Recognized legacy class aliases use Yahoo's `-` separator. Other dotted
+/// symbols keep their exchange suffix. Blank entries are dropped.
 fn parse_symbols(input: Option<&str>) -> Option<Vec<String>> {
     let input = input?;
     if input.is_empty() {
@@ -43,12 +44,16 @@ fn parse_symbols(input: Option<&str>) -> Option<Vec<String>> {
 
     let symbols: Vec<String> = input
         .split(',')
+        .map(str::trim)
         .map(|symbol| {
-            if symbol.contains('.') && !symbol.contains(".HK") {
-                symbol.replacen('.', "-", 1).trim().to_owned()
-            } else {
-                symbol.trim().to_owned()
+            match symbol {
+                "BRK.A" => "BRK-A",
+                "BRK.B" => "BRK-B",
+                "BF.A" => "BF-A",
+                "BF.B" => "BF-B",
+                _ => symbol,
             }
+            .to_owned()
         })
         .filter(|symbol| !symbol.is_empty())
         .collect();
@@ -80,5 +85,33 @@ mod tests {
     #[test]
     fn rejects_blank_symbol_lists() {
         assert_eq!(parse_symbols(Some(" , , ")), None);
+    }
+
+    #[test]
+    fn normalization_preserves_symbols_and_is_idempotent() {
+        let cases = [
+            ("BRK.A", "BRK-A"),
+            ("BRK.B", "BRK-B"),
+            ("BF.A", "BF-A"),
+            ("BF.B", "BF-B"),
+            ("7203.T", "7203.T"),
+            ("VOD.L", "VOD.L"),
+            ("0700.hk", "0700.hk"),
+            ("ABC.A", "ABC.A"),
+            ("X.HK.B", "X.HK.B"),
+            ("^GSPC", "^GSPC"),
+            ("BTC-USD", "BTC-USD"),
+            ("AAPL", "AAPL"),
+        ];
+        for (left, normalized_left) in cases {
+            for (right, normalized_right) in cases {
+                for whitespace in ["", " ", "\t", "\n", "\u{2003}"] {
+                    let input = format!(",{whitespace}{left}{whitespace},,{right},{left},");
+                    let normalized = parse_symbols(Some(&input)).expect("symbols");
+                    assert_eq!(normalized, vec![normalized_left, normalized_right, normalized_left]);
+                    assert_eq!(parse_symbols(Some(&normalized.join(","))), Some(normalized));
+                }
+            }
+        }
     }
 }
