@@ -2,28 +2,27 @@
 
 ## Project Structure & Module Organization
 
-呢個 repo 係用 NestJS + TypeScript 寫嘅股票報價 API。Runtime source code 放喺 `src/`，入口係 `src/main.ts`，root module wiring 喺 `src/app.module.ts`。股票報價功能集中喺 `src/stock-prices/`，包括 controller、service、module、type 同 unit spec。End-to-end tests 同測試 helper 放喺 `test/`。Build output 會產生喺 `dist/`，唔好直接改。
+呢個 repo 係用 Rust + Axum 寫嘅股票報價 API。Runtime source code 放喺 `src/`，binary 入口係 `src/main.rs`，library root 係 `src/lib.rs`，router wiring 喺 `src/app.rs`。Root endpoint 喺 `src/app_controller.rs`，錯誤轉換喺 `src/error.rs`。股票報價功能集中喺 `src/stock_prices/`，包括 controller、service、types 同 Yahoo Finance client。Integration tests 放喺 `tests/`。Build output 會產生喺 `target/`，唔好直接改。
 
 ## Build, Test, and Development Commands
 
-- `pnpm install`: 按 `pnpm-lock.yaml` 安裝 dependencies。
-- `pnpm run start:dev`: 用 Nest watch mode 跑 server，預設係 `http://localhost:3000`。
-- `PORT=3100 pnpm run start:dev`: 用自訂 port 本地開發。
-- `pnpm run build`: compile TypeScript output 到 `dist/`。
-- `pnpm run start:prod`: 跑 compiled app `dist/main.js`。
-- `pnpm run test`: 跑 Jest unit tests。
-- `pnpm run test:e2e`: 用 `test/jest-e2e.json` 跑 API e2e tests。
-- `pnpm run test:cov`: 跑 Jest coverage。
-- `pnpm exec tsc --noEmit -p tsconfig.json`: 只做 type check，唔輸出檔案。
-- `pnpm run format`: 用 Prettier format `src/**/*.ts` 同 `test/**/*.ts`。
+- `cargo build`: compile debug binary。
+- `cargo build --release`: compile optimized binary 到 `target/release/stock-prices`。
+- `cargo run`: 跑 server，預設係 `http://localhost:3000`。
+- `PORT=3100 cargo run`: 用自訂 port 本地開發。
+- `cargo test`: 跑 unit tests 同 integration tests。
+- `cargo fmt`: 用 rustfmt format 全部 code（settings 喺 `rustfmt.toml`）。
+- `cargo clippy --all-targets`: 跑 linter。
 
 ## Coding Style & Naming Conventions
 
-跟返 repo 現有 TypeScript 同 NestJS 寫法。Feature code 按 module 分組，例如 `stock-prices.controller.ts`、`stock-prices.service.ts`、`stock-prices.module.ts`。用 4 spaces indentation、semicolons、double quotes；trailing comma 由 Prettier 決定。API boundary 優先用明確 exported class、interface 同 type。Controller 保持薄身；Yahoo Finance access 同 quote normalization 放喺 service。
+跟返 repo 現有 Rust 寫法。Feature code 按 module 分組，例如 `stock_prices/controller.rs`、`stock_prices/service.rs`。Module 同 file name 用 `snake_case`，type 用 `PascalCase`。Indentation 同 line width 由 `rustfmt.toml` 決定（4 spaces、`max_width = 200`）。API boundary 優先用明確 `pub` struct、trait 同 type alias。Controller 保持薄身；Yahoo Finance access 放喺 `yahoo.rs`，quote normalization 放喺 `service.rs`。
+
+Controller 依賴 `QuoteProvider` trait 而唔係 concrete service，方便 test 換 stub。
 
 ## Testing Guidelines
 
-Unit tests 用 Jest + `ts-jest`；test file 命名做 `*.spec.ts`，放喺被測 code 旁邊。E2E tests 放喺 `test/`，用 Supertest。Coverage 而家收集 `src/stock-prices/*.ts`，但排除 specs、modules 同 type-only files。改 request parsing、response shape、error handling 或 Yahoo Finance mapping 時，要同步加或更新 tests。
+Unit tests 用 `#[cfg(test)] mod tests`，放喺被測 code 同一個檔案。Integration tests 放喺 `tests/app_e2e.rs`，用 `tower::ServiceExt::oneshot` 直接打 Axum `Router`。Tests 唔應該出網——用 `QuoteProvider` stub 代替真 Yahoo Finance。改 request parsing、response shape、error handling 或 Yahoo Finance mapping 時，要同步加或更新 tests。
 
 ## Commit & Pull Request Guidelines
 
@@ -31,4 +30,6 @@ Unit tests 用 Jest + `ts-jest`；test file 命名做 `*.spec.ts`，放喺被測
 
 ## Security & Configuration Tips
 
-唔好 commit secrets 或本地 environment files。呢個 API 依賴 Yahoo Finance response，所以 upstream failure 要 defensive 咁處理；除非係有意改 API contract，否則要保留現有 `400`、`405`、`502` 行為。
+唔好 commit secrets 或本地 environment files。呢個 API 依賴 Yahoo Finance response，所以 upstream failure 要 defensive 咁處理；除非係有意改 API contract，否則要保留現有 `400`、`405`、`502` 行為。Upstream error 嘅 cause chain 只可以 log 去 stderr，唔可以入 response body。
+
+Yahoo `v7/finance/quote` 要 cookie + crumb session，`yahoo.rs` 已經處理埋 cache 同 refresh；佢亦特意 pin HTTP/1.1，因為 Yahoo edge 會斷我哋嘅 HTTP/2 stream。

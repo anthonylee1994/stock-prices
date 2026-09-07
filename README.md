@@ -1,36 +1,34 @@
 # Stock Prices API
 
-用 NestJS + TypeScript 寫嘅股票報價 API。資料由 Yahoo Finance 提供，HTTP response 會用 TOON 格式輸出，適合俾其他 service、script、dashboard 或 agent 用 text-first 格式讀取股票資料。
+用 Rust + Axum 寫嘅股票報價 API。資料由 Yahoo Finance 提供，HTTP response 係 JSON，適合俾其他 service、script、dashboard 或 agent 讀取股票資料。
 
-呢個 project 目標係保持 API 簡單：一個 health/meta endpoint，一個 quotes endpoint。Server 會幫你處理 symbol parsing、Yahoo Finance query、欄位整理、錯誤轉換同 CORS。
+呢個 project 目標係保持 API 簡單：一個 health/meta endpoint，一個 quotes endpoint。Server 會幫你處理 symbol parsing、Yahoo Finance query（連 cookie/crumb session）、欄位整理、錯誤轉換同 CORS。
 
 ## 功能
 
 - `GET /` 回傳 API metadata
 - `GET /quotes?symbols=AAPL,MSFT` 回傳一隻或多隻股票報價
-- Yahoo Finance quote data，預設 `lang=zh-HK`、`region=HK`
-- TOON text response：`text/plain; charset=utf-8`
+- Yahoo Finance `v7/finance/quote` data，預設 `lang=zh-HK`、`region=HK`
+- JSON response：`application/json`
 - CORS enabled：允許 `GET`、`OPTIONS`
-- Dockerfile 同 Procfile，可部署去支援 Node.js 嘅 hosting
-- Jest unit tests 同 e2e tests，方便改 API 行為時驗證
+- Cargo unit tests 同 integration tests，方便改 API 行為時驗證
 
 ## 環境要求
 
-- Node.js 24 或以上
-- pnpm 11.1.3 或以上
+- Rust 1.90 或以上（edition 2024）
 
-建議用 `pnpm`，因為 repo 已經有 `pnpm-lock.yaml`。如果用其他 package manager，dependency resolution 可能會同 CI 或本地預期唔一致。
+冇其他 runtime dependency：`cargo build --release` 出嚟係一個 static-ish binary，直接跑就得。
 
 ## 安裝
 
 ```bash
-pnpm install
+cargo build
 ```
 
 ## 快速開始
 
 ```bash
-pnpm run start:dev
+cargo run
 ```
 
 預設 server 會喺 `http://localhost:3000`。開咗之後可以先試 root endpoint：
@@ -48,14 +46,14 @@ curl "http://localhost:3000/quotes?symbols=AAPL,MSFT,0700.HK"
 如果要改 port：
 
 ```bash
-PORT=3100 pnpm run start:dev
+PORT=3100 cargo run
 ```
 
 ## API Design
 
-所有正常 response 都係 TOON text，content type 係 `text/plain; charset=utf-8`。TOON 比 JSON 更 compact，對 LLM 或文字 pipeline 比較友善；但 consumer 需要按 TOON 格式 parse，而唔係直接當 JSON。
+所有正常 response 都係 JSON，content type 係 `application/json`。缺失嘅欄位會直接由 response 中省略，而唔會出現 `null`。
 
-股票 symbol 會用 comma-separated 格式傳入，例如 `AAPL,MSFT,0700.HK`。Server 會自動 trim 空白同忽略空項目，所以 client 唔需要自己做太多 cleanup。
+股票 symbol 會用 comma-separated 格式傳入，例如 `AAPL,MSFT,0700.HK`。Server 會自動 trim 空白同忽略空項目，所以 client 唔需要自己做太多 cleanup。非港股 symbol 嘅第一個 `.` 會轉成 `-`（例如 `BRK.B` → `BRK-B`），因為 Yahoo 就係用呢個格式表示 share class；`.HK` suffix 會原樣保留。
 
 ## API
 
@@ -111,7 +109,7 @@ Response 內容：
 - `quotes[].priceToBook`
 - `quotes[].dividendYield`
 
-部分欄位可能會係 `null` 或缺失，視乎 Yahoo Finance 當時有冇提供相關 market data。例如 pre-market、post-market、valuation ratio 同 dividend data 唔一定每隻股票都有。
+部分欄位可能會缺失，視乎 Yahoo Finance 當時有冇提供相關 market data。例如 pre-market、post-market、valuation ratio 同 dividend data 唔一定每隻股票都有。時間欄位係 ISO 8601 UTC string，例如 `2026-09-04T20:00:01.000Z`。已退市嘅 symbol（Yahoo 回 `quoteType: "NONE"`）會被過濾走。
 
 ### Errors
 
@@ -119,70 +117,53 @@ Response 內容：
 - 非支援 method：`405 Method Not Allowed`
 - Yahoo Finance request 失敗：`502 Bad Gateway`
 
-Error response 一樣會用 TOON/text 格式輸出。Client 應該用 HTTP status code 判斷錯誤類型，唔好只靠 response body string。
+Error response 一樣係 JSON，shape 係 `{message, error?, statusCode}`。Client 應該用 HTTP status code 判斷錯誤類型，唔好只靠 response body string。上游錯誤嘅完整 cause chain 會 log 去 stderr，唔會出現喺 response 度。
 
 ## Commands
 
 ```bash
-pnpm run build
-pnpm run start:dev
-pnpm run start:prod
-pnpm run test
-pnpm run test:cov
-pnpm run test:e2e
-pnpm exec tsc --noEmit -p tsconfig.json
-pnpm run format
+cargo build
+cargo build --release
+cargo run
+cargo test
+cargo fmt
+cargo clippy --all-targets
 ```
 
 常用 workflow：
 
 ```bash
-pnpm exec tsc --noEmit -p tsconfig.json
-pnpm run format
-pnpm run test
-pnpm run test:e2e
+cargo fmt
+cargo test
 ```
 
-改 TypeScript code 後，最少要跑 type check 同 Prettier；改 API behavior 時，亦要跑 unit/e2e tests。
+改完 Rust code 後，最少要跑 `cargo fmt`；改 API behavior 時，亦要跑 `cargo test`。
 
 ## Testing
 
-Unit tests 放喺 feature code 附近，例如 `src/stock-prices/stock-prices.service.spec.ts`。E2E tests 放喺 `test/app.e2e-spec.ts`，會用 Nest testing module 同 Supertest 驗證 HTTP behavior。
+Unit tests 放喺被測 code 同一個檔案嘅 `#[cfg(test)] mod tests` 入面，例如 `src/stock_prices/controller.rs` 嘅 symbol parsing 同 `src/stock_prices/service.rs` 嘅 quote mapping。Integration tests 放喺 `tests/app_e2e.rs`，會用 `tower::ServiceExt::oneshot` 直接打真嘅 Axum `Router`，驗證 status code、content type、JSON body 同 CORS header。
 
-Coverage 設定喺 `jest.config.cjs`，主要針對 `src/stock-prices/*.ts`，並排除 spec、module 同 type-only files。`@toon-format/toon` 喺 unit tests 入面會 map 去 `test/toon.ts`，令測試輸出穩定啲。
+Integration tests 用 `QuoteProvider` trait 嘅 stub 代替真 Yahoo Finance，所以測試唔會出網。
 
 ## Production
 
 Build：
 
 ```bash
-pnpm run build
+cargo build --release
 ```
 
 Run compiled app：
 
 ```bash
-pnpm run start:prod
-```
-
-`Procfile`：
-
-```text
-web: node dist/main.js
-```
-
-Docker：
-
-```bash
-docker build -t stock-prices .
-docker run --rm -p 3000:3000 stock-prices
+./target/release/stock-prices
 ```
 
 部署時記得：
 
-- Hosting platform 要支援 Node.js 24
-- Production command 係 `node dist/main.js`
-- App 會讀 `PORT` environment variable；如果冇設定，就用預設 port
+- Production command 係 `./target/release/stock-prices`
+- App 會讀 `PORT` environment variable；如果冇設定，就用 `3000`
+- Server bind `0.0.0.0`，所以 container 或 PaaS 都用得
 - Yahoo Finance 係 external dependency，network failure 或 upstream error 會變成 `502 Bad Gateway`
 
 ## Project Structure
@@ -190,31 +171,28 @@ docker run --rm -p 3000:3000 stock-prices
 ```text
 stock-prices/
 ├── src/
-│   ├── app.controller.ts
-│   ├── app.module.ts
-│   ├── main.ts
-│   └── stock-prices/
-│       ├── stock-prices.controller.ts
-│       ├── stock-prices.controller.spec.ts
-│       ├── stock-prices.module.ts
-│       ├── stock-prices.service.spec.ts
-│       ├── stock-prices.service.ts
-│       └── stock-prices.type.ts
-├── test/
-│   ├── app.e2e-spec.ts
-│   ├── jest-e2e.json
-│   └── toon.ts
-├── Dockerfile
-├── Procfile
-├── pnpm-lock.yaml
-├── pnpm-workspace.yaml
-├── jest.config.cjs
-├── package.json
-└── tsconfig.json
+│   ├── app.rs                  # Router wiring + CORS
+│   ├── app_controller.rs       # GET /
+│   ├── error.rs                # ApiError → HTTP status + JSON body
+│   ├── lib.rs
+│   ├── main.rs                 # bootstrap，讀 PORT，graceful shutdown
+│   └── stock_prices/
+│       ├── controller.rs       # GET /quotes + symbol parsing
+│       ├── mod.rs
+│       ├── service.rs          # QuoteProvider trait + Yahoo → Quote mapping
+│       ├── types.rs            # Quote response shape
+│       └── yahoo.rs            # Yahoo Finance client（cookie/crumb session）
+├── tests/
+│   └── app_e2e.rs
+├── Cargo.toml
+├── Cargo.lock
+└── rustfmt.toml
 ```
 
 ## Development Notes
 
-`src/stock-prices/stock-prices.controller.ts` 負責 HTTP request/response handling；`stock-prices.service.ts` 負責 call Yahoo Finance 同整理 quote data。新增欄位時，通常要同步改 type、service mapping、controller/service tests 同 README response list。
+`src/stock_prices/controller.rs` 負責 HTTP request/response handling；`service.rs` 負責整理 quote data；`yahoo.rs` 負責同 Yahoo Finance 溝通。新增欄位時，通常要同步改 `yahoo.rs` 嘅 `YahooQuote`、`types.rs` 嘅 `Quote`、`service.rs` 嘅 `map_quote`、相關 tests 同 README response list。
 
-如果要改 response format，要留意現有 consumer 可能依賴 TOON text response。除非係有意破壞 contract，否則唔好改 content type 或 top-level response shape。
+Yahoo 嘅 `v7/finance/quote` 要 session cookie 加一個配對嘅 crumb token，`yahoo.rs` 會 lazy 咁拎一次然後 cache，等 Yahoo 拒收（`401`/`403` 或者 description 提到 crumb）時先自動換新嘅再 retry 一次。另外 Yahoo edge 會用 protocol error 中斷我哋嘅 HTTP/2 stream，所以 client 特意 pin 咗 HTTP/1.1，唔好隨手拆。
+
+如果要改 response format，要留意現有 consumer 可能依賴而家嘅 JSON shape。除非係有意破壞 contract，否則唔好改 content type 或 top-level response shape。
