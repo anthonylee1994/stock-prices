@@ -166,30 +166,47 @@ Run compiled app：
 - Server bind `0.0.0.0`，所以 container 或 PaaS 都用得
 - Yahoo Finance 係 external dependency，network failure 或 upstream error 會變成 `502 Bad Gateway`
 
-### Vercel
+### Dokku
 
-呢個 repo 同時支援 Vercel 嘅原生 Rust runtime（Vercel Functions on Fluid compute）。`api/axum.rs` 係 function entrypoint，佢直接重用 `create_app()`，所以 controller、error mapping 同 CORS 全部同本地一模一樣。`vercel.json` 將所有 path rewrite 去 `/api/axum`，等 Axum router 自己做 routing。
+Deploy 用 Dokku。Repo 入面有 `Dockerfile`，Dokku 見到就會用 Dockerfile builder（multi-stage：`rust:1-slim-trixie` compile release binary，再 copy 去 `debian:trixie-slim` 行），唔使裝任何 buildpack。
+
+首次喺 server 開 app：
 
 ```bash
-npm i -g vercel
-vercel login
-vercel link
-vercel deploy          # preview deployment
-vercel deploy --prod   # production deployment
+ssh anthony 'dokku apps:create stock-prices'
+ssh anthony 'dokku ports:set stock-prices http:80:5000'
+```
+
+加 git remote（已經加咗就可以跳過）：
+
+```bash
+git remote add dokku dokku@157.230.194.101:stock-prices
+```
+
+Deploy：
+
+```bash
+git push dokku main
+```
+
+常用操作：
+
+```bash
+ssh anthony 'dokku logs stock-prices -t'      # tail logs
+ssh anthony 'dokku ps:restart stock-prices'   # restart
+ssh anthony 'dokku ps:report stock-prices'    # 睇 process 狀態
 ```
 
 注意：
 
-- Vercel 嘅 Rust runtime 仍然係 public beta，account 可能要先開權限
-- Function 唔會長開，所以 `yahoo.rs` 嘅 cookie/crumb cache 只喺同一個 warm instance 內有效；cold start 會重新拎一次 crumb
-- 本地 `cargo run` 用 `src/main.rs`（long-running server），兩個 entrypoint 並存，互不影響
+- App 唔使任何 environment variable，`PORT` 由 Dokku inject（Dockerfile `EXPOSE 5000` 做 fallback）
+- Server 得 2 core，release build 開咗 `lto = true` + `codegen-units = 1`，第一次 build 會慢；之後 Docker layer cache 會快返
+- Process 長開，所以 `yahoo.rs` 嘅 cookie/crumb cache 會一直有效，唔會好似 serverless 咁每次 cold start 重新拎 crumb
 
 ## Project Structure
 
 ```text
 stock-prices/
-├── api/
-│   └── axum.rs                 # Vercel Function entrypoint（重用 create_app）
 ├── src/
 │   ├── app.rs                  # Router wiring + CORS
 │   ├── app_controller.rs       # GET /
@@ -207,8 +224,8 @@ stock-prices/
 ├── Cargo.toml
 ├── Cargo.lock
 ├── rustfmt.toml
-├── vercel.json                 # 全部 path rewrite 去 /api/axum
-└── .vercelignore
+├── Dockerfile                  # Dokku deploy 用嘅 multi-stage build
+└── .dockerignore
 ```
 
 ## Development Notes

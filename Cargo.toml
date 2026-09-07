@@ -14,11 +14,6 @@ path = "src/lib.rs"
 name = "stock-prices"
 path = "src/main.rs"
 
-# Vercel Function entrypoint; `vercel.json` rewrites every path to it.
-[[bin]]
-name = "axum"
-path = "api/axum.rs"
-
 [dependencies]
 async-trait = "0.1"
 axum = "0.8"
@@ -42,7 +37,6 @@ tokio = { version = "1", features = [
 ] }
 tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["cors"] }
-vercel_runtime = { version = "2.4", features = ["axum"] }
 
 [dev-dependencies]
 http-body-util = "0.1"

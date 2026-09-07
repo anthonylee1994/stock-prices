@@ -1,9 +1,6 @@
 # Build output
 target/
 
-# Vercel
-.vercel
-
 # Environment variables
 .env
 .env.local
