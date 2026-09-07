@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-呢個 repo 係用 Rust + Axum 寫嘅股票報價 API。Runtime source code 放喺 `src/`，binary 入口係 `src/main.rs`，library root 係 `src/lib.rs`，router wiring 喺 `src/app.rs`。Root endpoint 喺 `src/app_controller.rs`，錯誤轉換喺 `src/error.rs`。股票報價功能集中喺 `src/stock_prices/`，包括 controller、service、types 同 Yahoo Finance client。Integration tests 放喺 `tests/`。Build output 會產生喺 `target/`，唔好直接改。
+呢個 repo 係用 Rust + Axum 寫嘅股票報價 API。Runtime source code 放喺 `src/`，binary 入口係 `src/main.rs`，library root 係 `src/lib.rs`，router wiring 喺 `src/app.rs`。Root endpoint 喺 `src/app_controller.rs`，錯誤轉換喺 `src/error.rs`。股票報價功能集中喺 `src/stock_prices/`，包括 controller、service、types 同 Yahoo Finance client。Integration tests 放喺 `tests/`。Build output 會產生喺 `target/`，唔好直接改。`api/axum.rs` 係 Vercel Function entrypoint，佢只係包一層 `VercelLayer` 再重用 `create_app()`——router 或 controller 有改動，唔需要同步改佢。
 
 ## Build, Test, and Development Commands
 

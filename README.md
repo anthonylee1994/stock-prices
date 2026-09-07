@@ -166,10 +166,30 @@ Run compiled app：
 - Server bind `0.0.0.0`，所以 container 或 PaaS 都用得
 - Yahoo Finance 係 external dependency，network failure 或 upstream error 會變成 `502 Bad Gateway`
 
+### Vercel
+
+呢個 repo 同時支援 Vercel 嘅原生 Rust runtime（Vercel Functions on Fluid compute）。`api/axum.rs` 係 function entrypoint，佢直接重用 `create_app()`，所以 controller、error mapping 同 CORS 全部同本地一模一樣。`vercel.json` 將所有 path rewrite 去 `/api/axum`，等 Axum router 自己做 routing。
+
+```bash
+npm i -g vercel
+vercel login
+vercel link
+vercel deploy          # preview deployment
+vercel deploy --prod   # production deployment
+```
+
+注意：
+
+- Vercel 嘅 Rust runtime 仍然係 public beta，account 可能要先開權限
+- Function 唔會長開，所以 `yahoo.rs` 嘅 cookie/crumb cache 只喺同一個 warm instance 內有效；cold start 會重新拎一次 crumb
+- 本地 `cargo run` 用 `src/main.rs`（long-running server），兩個 entrypoint 並存，互不影響
+
 ## Project Structure
 
 ```text
 stock-prices/
+├── api/
+│   └── axum.rs                 # Vercel Function entrypoint（重用 create_app）
 ├── src/
 │   ├── app.rs                  # Router wiring + CORS
 │   ├── app_controller.rs       # GET /
@@ -186,7 +206,9 @@ stock-prices/
 │   └── app_e2e.rs
 ├── Cargo.toml
 ├── Cargo.lock
-└── rustfmt.toml
+├── rustfmt.toml
+├── vercel.json                 # 全部 path rewrite 去 /api/axum
+└── .vercelignore
 ```
 
 ## Development Notes
